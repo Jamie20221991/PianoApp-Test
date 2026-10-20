@@ -48,7 +48,7 @@ class StaffReel {
     this.ctx = canvas.getContext('2d');
     this.events = [];        // { t, step, sharp, name, octave, midi }
     this.showNames = true;
-    this.speed = 100;        // pixels per second
+    this.speed = 160;        // pixels per second
     this.groupWindow = 120;  // ms: notes pressed this close together are drawn as a chord
     this.lastGroupTime = 0;
     this.raf = null;
@@ -217,7 +217,7 @@ class StaffReel {
       let prevShifted = false;
       list.forEach(e => {
         const shifted = prevStep !== null && e.step - prevStep <= 1 && !prevShifted;
-        this.drawNote(e, x + (shifted ? this.half * 2.5 : 0), alpha);
+        this.drawNote(e, x + (shifted ? this.half * 2.5 : 0), alpha, !this.chordName(list));
         prevStep = e.step;
         prevShifted = shifted;
       });
@@ -261,7 +261,7 @@ class StaffReel {
     });
   }
 
-  drawNote(e, x, alpha) {
+  drawNote(e, x, alpha, showName) {
     const { ctx, half } = this;
     const y = this.y(e.step);
     const rx = half * 1.3;
@@ -298,7 +298,7 @@ class StaffReel {
 
     if (e.sharp) this.drawSharp(x - rx - half * 2.2, y);
 
-    if (this.showNames) {
+    if (this.showNames && showName) {
       ctx.globalAlpha = alpha * 0.7;
       ctx.font = `600 ${Math.max(10, half * 2.3)}px Inter, sans-serif`;
       ctx.textBaseline = 'middle';
