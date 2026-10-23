@@ -2,12 +2,6 @@
   --bg-1: #1a0f09;
   --bg-2: #2d1b12;
   --bg-3: #3c2617;
-  --wood-1: #4d3120;
-  --wood-2: #603d27;
-  --wood-3: #7a4c32;
-  --wood-4: #9f6541;
-  --wood-5: #c58d5e;
-  --wood-6: #e3be8d;
 
   --app-shell-top: rgba(111, 71, 49, 0.92);
   --app-shell-mid: rgba(56, 31, 18, 0.92);
@@ -18,26 +12,23 @@
   --toolbar-bg-bottom: rgba(89, 56, 38, 0.72);
   --panel-bg-top: rgba(53, 31, 22, 0.9);
   --panel-bg-bottom: rgba(29, 17, 12, 0.8);
-  --piano-top: rgba(69,42,27,0.98);
-  --piano-mid: rgba(42,27,18,0.96);
-  --piano-bottom: rgba(21,12,9,0.98);
+  --piano-top: rgba(69, 42, 27, 0.98);
+  --piano-mid: rgba(42, 27, 18, 0.96);
+  --piano-bottom: rgba(21, 12, 9, 0.98);
 
   --white-key: #fefaf4;
   --white-key-2: #f4ecdf;
   --white-key-3: #e8dcc4;
-  --white-key-active: #f3d3a2;
 
   --black-key-1: #120b08;
   --black-key-2: #1f130f;
   --black-key-3: #2d1d15;
-  --black-key-active: #5b3b2f;
 
   --gold: #d8b06a;
   --gold-soft: #f3d8a6;
   --text: #f4e7d6;
   --muted: #d7b98a;
   --ink: #2b170f;
-  --shadow: rgba(0, 0, 0, 0.48);
   --button-grad-1: #ab6d43;
   --button-grad-2: #d49d5d;
   --scale-glow: rgba(248, 218, 165, 0.45);
@@ -48,8 +39,8 @@
 }
 
 html, body {
+  height: 100%;
   margin: 0;
-  min-height: 100%;
   font-family: 'Inter', sans-serif;
   background:
     radial-gradient(circle at top, rgba(211, 176, 106, 0.18), transparent 30%),
@@ -58,28 +49,31 @@ html, body {
 }
 
 body {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 32px 18px;
+  overflow: hidden; /* everything fits on one screen */
 }
 
 button, input, select {
   font: inherit;
 }
 
+/* ---- Page layout: controls | staff | controls, piano underneath ---- */
 .app-shell {
-  width: min(1200px, 100%);
+  /* Width of one white key. The piano area is 57 white keys wide:
+     52 real keys + 5 spare on the left, so middle C lands in the centre of the screen.
+     64px = shell padding (36) + piano padding (28). */
+  --kw: max(calc((100vw - 64px) / 57), 14px);
+
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 150px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px 16px;
+  padding: 16px 18px 18px;
   background:
     linear-gradient(180deg, var(--app-shell-top) 0%, var(--app-shell-mid) 24%, var(--app-shell-bottom) 100%);
-  border: 1px solid rgba(217, 176, 106, 0.3);
-  box-shadow:
-    0 28px 80px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255, 236, 204, 0.4),
-    inset 0 -10px 30px rgba(0, 0, 0, 0.55);
-  border-radius: 28px;
-  overflow: hidden;
-  position: relative;
 }
 
 .app-shell::before {
@@ -89,202 +83,213 @@ button, input, select {
   background:
     repeating-linear-gradient(
       90deg,
-      rgba(255,255,255,0.02) 0,
-      rgba(255,255,255,0.02) 2px,
-      rgba(0,0,0,0.02) 2px,
-      rgba(0,0,0,0.02) 5px
+      rgba(255, 255, 255, 0.02) 0,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(0, 0, 0, 0.02) 2px,
+      rgba(0, 0, 0, 0.02) 5px
     );
   pointer-events: none;
 }
 
-.topbar {
+.side,
+.staff-panel,
+.piano {
   position: relative;
   z-index: 1;
+}
+
+.side-left   { grid-column: 1; grid-row: 1; }
+.staff-panel { grid-column: 2; grid-row: 1; }
+.side-right  { grid-column: 3; grid-row: 1; }
+.piano       { grid-column: 1 / -1; grid-row: 2; }
+
+/* ---- Minimal side controls ---- */
+.side {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 28px 30px 18px;
-  border-bottom: 1px solid rgba(232, 203, 159, 0.18);
-  background:
-    linear-gradient(180deg, var(--topbar-top) 0%, var(--topbar-bottom) 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 240, 216, 0.12);
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  min-height: 0;
 }
 
-.eyebrow {
-  margin: 0 0 8px;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
+.brand h1 {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
   font-weight: 800;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
   color: var(--gold-soft);
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
 }
 
-.toolbar {
+.ctl {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.octave-control,
-.control-group,
-.volume-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--toolbar-bg-top), var(--toolbar-bg-bottom));
-  border: 1px solid rgba(227, 190, 141, 0.25);
+  flex-direction: column;
+  gap: 5px;
   color: var(--muted);
-  box-shadow: inset 0 1px 0 rgba(255, 235, 203, 0.12);
-}
-
-.octave-control button {
-  width: 38px;
-  height: 38px;
-  border: 0;
-  border-radius: 50%;
-  font-size: 24px;
-  color: #fffaf5;
-  background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
-  cursor: pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.28),
-    0 10px 18px rgba(0, 0, 0, 0.35);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.octave-control button:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.28),
-    0 12px 20px rgba(0, 0, 0, 0.4);
-}
-
-#octave-label {
-  min-width: 96px;
-  text-align: center;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--gold-soft);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-.volume-control input,
-.control-group input[type="range"] {
-  width: 90px;
-  accent-color: var(--button-grad-2);
-}
-
-.control-group select {
+.ctl select {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
   background: rgba(24, 14, 10, 0.55);
   color: var(--text);
   border: 1px solid rgba(227, 190, 141, 0.2);
   border-radius: 8px;
-  padding: 6px 10px;
 }
 
-.piano-panel {
-  position: relative;
-  z-index: 1;
-  padding: 26px 30px 30px;
+.ctl input[type="range"] {
+  width: 100%;
+  accent-color: var(--button-grad-2);
 }
 
-.status-card {
-  display: grid;
-  grid-template-columns: 1fr 1.1fr auto;
-  gap: 16px;
-  align-items: center;
-  padding: 18px 20px;
-  margin-bottom: 24px;
-  border: 1px solid rgba(227, 190, 141, 0.2);
-  background: linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom));
-  border-radius: 18px;
-  box-shadow: inset 0 1px 0 rgba(255, 235, 203, 0.08), 0 12px 26px rgba(0,0,0,0.18);
-}
-
-.status-block {
+.keys-shift {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 
-.status-block.compact {
-  align-self: stretch;
-  justify-content: center;
+.keys-shift button {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: 17px;
+  line-height: 1;
+  color: #fffaf5;
+  background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
+  cursor: pointer;
 }
 
-.label {
-  color: var(--muted);
+#octave-label {
+  flex: 1;
+  text-align: center;
   font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   font-weight: 700;
-}
-
-#note-display {
-  font-size: clamp(1.5rem, 3vw, 2.3rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: 0.03em;
+  text-transform: none;
   color: var(--gold-soft);
 }
 
 .demo-btn {
+  width: 100%;
+  padding: 9px 12px;
   border: 0;
-  border-radius: 12px;
-  padding: 14px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
   color: #fffaf5;
   background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.26),
-    0 12px 22px rgba(0,0,0,0.28);
-  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 8px 16px rgba(0, 0, 0, 0.28);
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s ease;
 }
 
 .demo-btn:hover {
   transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.26),
-    0 16px 24px rgba(0,0,0,0.36);
 }
 
-.piano {
-  position: relative;
+/* ---- Staff reel ---- */
+.staff-panel {
+  align-self: center;
+  max-height: 100%;
   display: flex;
-  justify-content: center;
-  width: min(100%, 1100px);
-  margin: 0 auto;
-  height: 300px;
-  border-radius: 22px;
+  flex-direction: column;
+  padding: 10px 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(227, 190, 141, 0.2);
+  background: linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom));
+}
+
+.staff-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+.staff-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-toggle input {
+  accent-color: var(--button-grad-2);
+}
+
+.staff-clear {
+  margin-left: auto;
+  border: 1px solid rgba(227, 190, 141, 0.25);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-clear:hover {
+  color: var(--gold-soft);
+}
+
+/* The staff is as tall as the space allows, but never taller than 620px */
+.staff-canvas {
+  position: relative;
+  flex: 0 1 620px;
+  min-height: 0;
+}
+
+#staff {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--white-key), var(--white-key-3));
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* ---- Piano ---- */
+.piano {
+  height: min(27vh, calc(var(--kw) * 6.5));
+  min-height: 130px;
+  padding: 14px 14px 10px;
+  border-radius: 18px;
   background:
     linear-gradient(180deg, var(--piano-top) 0%, var(--piano-mid) 40%, var(--piano-bottom) 100%);
   border: 1.5px solid rgba(227, 190, 141, 0.2);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
     inset 0 -14px 28px rgba(0, 0, 0, 0.32),
-    0 18px 40px rgba(0,0,0,0.22);
-  padding: 18px 14px 12px;
-  overflow: hidden;
+    0 18px 40px rgba(0, 0, 0, 0.22);
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
-.piano::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(255,255,255,0.02), transparent 10%, transparent 90%, rgba(0,0,0,0.04));
-  pointer-events: none;
+/* 52 white keys, pushed 5 key-widths in from the left so middle C is centred */
+.keys {
+  position: relative;
+  display: flex;
+  flex: none;
+  width: calc(var(--kw) * 52);
+  height: 100%;
+  margin-left: calc(var(--kw) * 5);
 }
 
 .key {
@@ -294,40 +299,48 @@ h1 {
   touch-action: manipulation;
 }
 
-.white-key.in-scale {
-  background:
-    linear-gradient(180deg, #fffdf9 0%, #f8f1e8 38%, #eadbc0 100%);
-  box-shadow:
-    inset 0 3px 0 rgba(255,255,255,0.8),
-    inset 0 -10px 14px rgba(126, 82, 49, 0.08),
-    0 10px 20px rgba(0,0,0,0.18),
-    0 0 20px var(--scale-glow);
+.key:focus-visible {
+  outline: 2px solid var(--gold-soft);
+  outline-offset: -3px;
+  z-index: 3;
 }
 
-.white-key.out-of-scale {
-  background:
-    linear-gradient(180deg, var(--white-key) 0%, var(--white-key-2) 38%, var(--white-key-3) 100%);
-  opacity: 0.6;
-  box-shadow:
-    inset 0 3px 0 rgba(255,255,255,0.4),
-    inset 0 -10px 14px rgba(126, 82, 49, 0.08),
-    0 10px 20px rgba(0,0,0,0.18);
+.note-name {
+  font-size: clamp(9px, calc(var(--kw) * 0.34), 13px);
+  font-weight: 800;
+  line-height: 1;
 }
 
+.kbd-hint {
+  font-size: clamp(8px, calc(var(--kw) * 0.28), 11px);
+  font-weight: 600;
+  line-height: 1;
+  min-height: 1em;
+  opacity: 0.55;
+}
+
+.middle-c .note-name {
+  text-decoration: underline;
+}
+
+/* White keys */
 .white-key {
-  width: 60px;
+  flex: 1 1 0;
+  min-width: 0;
   height: 100%;
-  border-radius: 0 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 0 clamp(10px, calc(var(--kw) * 0.7), 22px);
+  border-radius: 0 0 10px 10px;
   background: linear-gradient(180deg, var(--white-key) 0%, var(--white-key-2) 38%, var(--white-key-3) 100%);
   border: 1px solid rgba(39, 20, 12, 0.18);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 16px;
   color: rgba(43, 23, 15, 0.7);
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.2s ease;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .white-key::before {
@@ -336,12 +349,12 @@ h1 {
   inset: 0;
   background: repeating-linear-gradient(
     90deg,
-    rgba(255,255,255,0.04),
-    rgba(255,255,255,0.04) 2px,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.04) 2px,
     rgba(120, 81, 52, 0.02) 2px,
     rgba(120, 81, 52, 0.02) 4px
   );
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 10px 10px;
   pointer-events: none;
 }
 
@@ -349,57 +362,32 @@ h1 {
   background: linear-gradient(180deg, #fffdf9 0%, #f8f1e8 42%, #eadbc0 100%);
 }
 
-.white-key.active {
-  background: linear-gradient(180deg, #f7d9b0 0%, #edc58f 40%, #e2b06d 100%);
-  transform: translateY(2px);
-  box-shadow:
-    inset 0 2px 0 rgba(255,255,255,0.5),
-    inset 0 -8px 10px rgba(108, 67, 38, 0.13),
-    0 8px 15px rgba(0,0,0,0.2);
-}
-
-.black-key.in-scale {
-  background: linear-gradient(180deg, #3a2a1f, #1f130f);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.12),
-    0 12px 18px rgba(0,0,0,0.38),
-    0 0 18px var(--scale-glow);
-}
-
-.black-key.out-of-scale {
-  background: linear-gradient(180deg, var(--black-key-2), var(--black-key-1));
-  opacity: 0.5;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    0 12px 18px rgba(0,0,0,0.38);
-}
-
+/* Black keys (their left and width are set by script.js, in %) */
 .black-key {
   position: absolute;
-  width: 28.5px;
+  top: 0;
   height: 62%;
-  top: 18px;
-  border-radius: 0 0 12px 12px;
-  background: linear-gradient(180deg, var(--black-key-2), var(--black-key-1));
-  border: 1px solid rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.7);
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 12px;
-  font-size: 11px;
-  font-weight: 700;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 0 12px;
+  border-radius: 0 0 7px 7px;
+  background: linear-gradient(180deg, var(--black-key-2), var(--black-key-1));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
   z-index: 2;
   cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.2s ease;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .black-key::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), transparent 30%, rgba(0,0,0,0.1));
-  border-radius: 0 0 12px 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%, rgba(0, 0, 0, 0.1));
+  border-radius: 0 0 7px 7px;
   pointer-events: none;
 }
 
@@ -407,102 +395,45 @@ h1 {
   background: linear-gradient(180deg, var(--black-key-3), var(--black-key-2));
 }
 
-.black-key.active {
-  background: linear-gradient(180deg, #875d43, var(--black-key-active));
-  transform: translateY(2px);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.1),
-    0 10px 18px rgba(0,0,0,0.44);
-}
+/* ---- Scale highlighting ---- */
 
-@media (max-width: 760px) {
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .toolbar {
-    width: 100%;
-  }
-
-  .control-group,
-  .volume-control {
-    flex: 1 1 100%;
-    justify-content: space-between;
-  }
-
-  .status-card {
-    grid-template-columns: 1fr;
-  }
-
-  .piano {
-    overflow-x: auto;
-    justify-content: flex-start;
-    height: 225px;
-  }
-
-  .white-key {
-    min-width: 32px;
-  }
-}
-/* ---- Piano layout fixes: paste at the very end of style.css ---- */
-
-/* Keys now live in a .keys wrapper so black keys can be positioned in % */
-.keys {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto;
-  width: 100%;
-  height: 100%;
-}
-
-/* White keys share the width equally instead of shrinking unevenly */
-.white-key {
-  flex: 1 1 0;
-  width: auto;
-  min-width: 0;
-  font-size: 12px;
-}
-
-/* Black keys are positioned inside .keys, so no extra top offset */
-.black-key {
-  top: 0;
-}
-
-.key:focus-visible {
-  outline: 2px solid var(--gold-soft);
-  outline-offset: -3px;
-  z-index: 3;
-}
-/* ---- Scale highlighting: paste at the very end of style.css (after the previous block) ---- */
-
-/* Labels: note name, with the computer-key hint underneath */
-.white-key,
-.black-key {
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-}
-.white-key { padding-bottom: 22px; }
-.black-key { padding-bottom: 16px; }
-
-.note-name { font-size: 12px; font-weight: 800; line-height: 1; }
-.kbd-hint  { font-size: 10px; font-weight: 600; line-height: 1; opacity: 0.55; }
-.black-key .note-name { color: rgba(255, 255, 255, 0.8); }
-
-/* Out of scale: clearly dimmed (no more see-through opacity) */
+/* Notes outside the scale: dark and "switched off" */
 .white-key.out-of-scale {
-  opacity: 1;
-  filter: brightness(0.5) saturate(0.7);
-  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.2), 0 6px 12px rgba(0, 0, 0, 0.25);
-}
-.black-key.out-of-scale {
-  opacity: 1;
-  filter: brightness(0.55);
+  filter: brightness(0.3) saturate(0.5);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1), 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* In scale: bright, with a glowing strip on the key */
+.black-key.out-of-scale {
+  filter: brightness(0.4);
+}
+
+.out-of-scale .note-name,
+.out-of-scale .kbd-hint {
+  opacity: 0.35;
+}
+
+/* Notes in the scale: bright, raised, glowing, with a gold strip */
+.white-key.in-scale {
+  z-index: 1;
+  background: linear-gradient(180deg, #fffdf9 0%, #f8f1e8 38%, #eadbc0 100%);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.9),
+    0 0 30px var(--scale-glow),
+    0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.white-key.in-scale .note-name {
+  color: var(--ink);
+}
+
+.black-key.in-scale {
+  background: linear-gradient(180deg, #5a4030, #2a1a12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 22px var(--scale-glow),
+    0 12px 18px rgba(0, 0, 0, 0.38);
+}
+
 .white-key.in-scale::after,
 .black-key.in-scale::after {
   content: '';
@@ -516,17 +447,16 @@ h1 {
   box-shadow: 0 0 10px var(--scale-glow);
   pointer-events: none;
 }
-.black-key.in-scale {
-  background: linear-gradient(180deg, #5a4030, #2a1a12);
-}
 
-/* Root note: a bigger strip and a warm tint so you can see where the scale starts */
+/* Root note: warm tint and a bigger strip */
 .white-key.is-root {
   background: linear-gradient(180deg, #fff3d6 0%, #f9dfaa 55%, #f0c777 100%);
 }
+
 .black-key.is-root {
   background: linear-gradient(180deg, #7a5336, #3a2416);
 }
+
 .white-key.is-root::after,
 .black-key.is-root::after {
   left: 15%;
@@ -539,218 +469,63 @@ h1 {
 /* Pressed keys always win, so you can see what is sounding */
 .white-key.active {
   filter: none;
-  opacity: 1;
   background: linear-gradient(180deg, #ffd98a 0%, #f0b64f 100%);
+  transform: translateY(2px);
   box-shadow: 0 0 24px var(--scale-glow), inset 0 2px 0 rgba(255, 255, 255, 0.6);
 }
-.black-key.active {
-  filter: none;
-  opacity: 1;
-  background: linear-gradient(180deg, #b27a4f, #6b442f);
-  box-shadow: 0 0 20px var(--scale-glow);
-}
-/* ---- Stronger scale contrast: paste at the very end of style.css ---- */
 
-/* Notes outside the scale: dark and "switched off" */
-.white-key.out-of-scale {
-  filter: brightness(0.3) saturate(0.5);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1), 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-.black-key.out-of-scale {
-  filter: brightness(0.4);
-}
-.out-of-scale .note-name,
-.out-of-scale .kbd-hint {
-  opacity: 0.35;
-}
-
-/* Notes in the scale: bright, raised, glowing */
-.white-key.in-scale {
-  z-index: 1;
-  box-shadow:
-    inset 0 3px 0 rgba(255, 255, 255, 0.9),
-    0 0 30px var(--scale-glow),
-    0 10px 20px rgba(0, 0, 0, 0.2);
-}
-.white-key.in-scale .note-name,
-.black-key.in-scale .note-name {
-  color: var(--ink);
-}
-.black-key.in-scale .note-name {
-  color: var(--gold-soft);
-}
-.black-key.in-scale {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 0 22px var(--scale-glow),
-    0 12px 18px rgba(0, 0, 0, 0.38);
-}
-
-/* Pressed keys always win (repeated here because the rules above come later) */
-.white-key.active {
-  filter: none;
-  background: linear-gradient(180deg, #ffd98a 0%, #f0b64f 100%);
-  box-shadow: 0 0 24px var(--scale-glow), inset 0 2px 0 rgba(255, 255, 255, 0.6);
-}
 .black-key.active {
   filter: none;
   background: linear-gradient(180deg, #b27a4f, #6b442f);
+  transform: translateY(2px);
   box-shadow: 0 0 20px var(--scale-glow);
 }
+
 .key.active .note-name,
 .key.active .kbd-hint {
   opacity: 1;
 }
 
-/* ---- Staff reel ---- */
-.staff-panel {
-  width: min(100%, 1100px);
-  margin: 0 auto 18px;
-  padding: 12px 14px 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(227, 190, 141, 0.2);
-  background: linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom));
-}
-.staff-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.staff-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.staff-toggle input { accent-color: var(--button-grad-2); }
-.staff-clear {
-  border: 1px solid rgba(227, 190, 141, 0.25);
-  border-radius: 999px;
-  padding: 6px 14px;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 600;
-  cursor: pointer;
-}
-.staff-clear:hover { color: var(--gold-soft); }
-#staff {
-  display: block;
-  width: 100%;
-  height: 250px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, var(--white-key), var(--white-key-3));
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-@media (max-width: 760px) {
-  #staff { height: 200px; }
-}
-
-/* ---- One-page layout: controls left and right of the piano ---- */
-body {
-  padding: 12px;
-}
-
-.app-shell {
-  width: min(1500px, 100%);
-  display: grid;
-  grid-template-columns: 190px minmax(0, 1fr) 190px;
-  gap: 16px;
-  align-items: center;
-  padding: 16px;
-}
-
-.piano-panel {
-  padding: 0;
-}
-
-.staff-panel {
-  margin-bottom: 12px;
-}
-
-.side {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.brand {
-  margin-bottom: 6px;
-}
-
-.brand .eyebrow {
-  margin-bottom: 4px;
-}
-
-.brand h1 {
-  font-size: 1.7rem;
-}
-
-.side .octave-control {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 14px;
-}
-
-.side .octave-control button {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  font-size: 20px;
-}
-
-.side #octave-label {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-}
-
-.side .control-group,
-.side .volume-control {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  font-size: 13px;
-}
-
-.side .control-group select {
-  width: 100%;
-  padding: 5px 8px;
-  font-size: 13px;
-}
-
-.side input[type="range"] {
-  width: 100%;
-}
-
-.side .demo-btn {
-  width: 100%;
-  padding: 12px 14px;
-}
-
-/* Small screens: stack everything in one column */
+/* ---- Small screens: stack everything and let the piano scroll sideways ---- */
 @media (max-width: 900px) {
+  body {
+    overflow: auto;
+  }
+
   .app-shell {
+    height: auto;
+    min-height: 100dvh;
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .side-left,
+  .staff-panel,
+  .side-right,
+  .piano {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .side {
     flex-direction: row;
     flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .side > * {
-    flex: 1 1 140px;
+    flex: 1 1 130px;
+  }
+
+  .staff-panel {
+    max-height: none;
+  }
+
+  .staff-canvas {
+    flex: 0 0 240px;
+  }
+
+  .piano {
+    height: 170px;
   }
 }
