@@ -41,10 +41,19 @@ const THEMES = {
 class PianoApp {
   constructor() {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    this.startOctave = 2;
-    this.numOctaves = 3;
-    this.minOctave = 1;
-    this.maxOctave = 6; // highest octave that may be displayed
+
+    // The piano is always the full 88 keys: A0 (MIDI 21) up to C8 (MIDI 108).
+    this.firstMidi = 21;
+    this.lastMidi = 108;
+    this.whiteKeyCount = 52;
+
+    // The computer keyboard plays two octaves at a time:
+    // the Z row starts on C of startOctave, the Q row on C one octave higher.
+    // With startOctave = 3, the Q key is middle C (C4).
+    this.startOctave = 3;
+    this.minOctave = 0;
+    this.maxOctave = 7;
+
     this.volume = 0.72;
     this.sustain = 0.4;
     this.reverbAmount = 0.3;
@@ -57,12 +66,9 @@ class PianoApp {
 
     this.notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-    // Black key centre, measured in white keys from the start of the octave
-    // (a black key sits on the boundary between two white keys).
-    this.blackKeyPos = { 'C#': 1, 'D#': 2, 'F#': 4, 'G#': 5, 'A#': 6 };
-    this.blackKeyRatio = 0.55; // black key width as a fraction of a white key
+    this.blackKeyRatio = 0.6; // black key width as a fraction of a white key
 
-    // key -> [note, octave offset from the first displayed octave]
+    // key -> [note, octave offset from startOctave]
     this.keyboardMap = {
       z: ['C', 0], s: ['C#', 0], x: ['D', 0], d: ['D#', 0], c: ['E', 0], v: ['F', 0],
       g: ['F#', 0], b: ['G', 0], h: ['G#', 0], n: ['A', 0], j: ['A#', 0], m: ['B', 0],
@@ -125,6 +131,8 @@ class PianoApp {
     this.applyTheme();
     this.renderPiano();
     this.setupEventListeners();
+    this.centreMiddleC();
+    window.addEventListener('resize', () => this.centreMiddleC());
   }
 
   isNoteInScale(note) {
@@ -142,17 +150,41 @@ class PianoApp {
     });
   }
 
-  updateOctaveLabel() {
-    const last = this.startOctave + this.numOctaves - 1;
-    document.getElementById('octave-label').textContent = `Octaves ${this.startOctave}-${last}`;
+  // Shows which computer key plays which piano key
+  updateHints() {
+    const hints = {};
+    Object.entries(this.keyboardMap).forEach(([letter, [note, offset]]) => {
+      hints[`${note}-${this.startOctave + offset}`] = letter.toUpperCase();
+    });
+    document.querySelectorAll('.key').forEach(key => {
+      const hint = key.querySelector('.kbd-hint');
+      if (hint) hint.textContent = hints[key.dataset.noteId] || '';
+    });
   }
 
+  updateOctaveLabel() {
+    document.getElementById('octave-label').textContent =
+      `C${this.startOctave}–B${this.startOctave + 1}`;
+  }
+
+  // The − and + buttons move the two octaves the computer keyboard plays
   shiftOctave(direction) {
     const start = this.startOctave + direction;
-    const end = start + this.numOctaves - 1;
-    if (start < this.minOctave || end > this.maxOctave) return;
+    if (start < this.minOctave || start > this.maxOctave) return;
+    this.stopAll();
     this.startOctave = start;
-    this.renderPiano();
+    this.updateHints();
+    this.updateOctaveLabel();
+  }
+
+  // Only matters on small screens, where the piano scrolls sideways
+  centreMiddleC() {
+    const piano = document.getElementById('piano');
+    const c4 = piano.querySelector('[data-note-id="C-4"]');
+    if (!c4 || piano.scrollWidth <= piano.clientWidth) return;
+    const pianoBox = piano.getBoundingClientRect();
+    const keyBox = c4.getBoundingClientRect();
+    piano.scrollLeft += (keyBox.left + keyBox.width / 2) - (pianoBox.left + pianoBox.width / 2);
   }
 
   renderPiano() {
@@ -161,69 +193,65 @@ class PianoApp {
     const piano = document.getElementById('piano');
     piano.innerHTML = '';
 
-    const whiteCount = this.numOctaves * 7;
     const wrap = document.createElement('div');
     wrap.className = 'keys';
-    wrap.style.minWidth = `${whiteCount * 38}px`; // scrolls sideways on narrow screens
 
-    // Computer-keyboard letters shown on the keys
-    const hints = {};
-    Object.entries(this.keyboardMap).forEach(([letter, [note, offset]]) => {
-      hints[`${note}-${this.startOctave + offset}`] = letter.toUpperCase();
-    });
+    let whitesSoFar = 0; // a black key sits on the line after this many white keys
 
-    for (let o = 0; o < this.numOctaves; o++) {
-      const octave = this.startOctave + o;
+    for (let midi = this.firstMidi; midi <= this.lastMidi; midi++) {
+      const note = this.notes[midi % 12];
+      const octave = Math.floor(midi / 12) - 1;
+      const isBlack = note.includes('#');
+      const noteId = `${note}-${octave}`;
+      const key = document.createElement('button');
 
-      this.notes.forEach(note => {
-        const isBlack = note.includes('#');
-        const noteId = `${note}-${octave}`;
-        const key = document.createElement('button');
+      key.type = 'button';
+      key.className = `key ${isBlack ? 'black-key' : 'white-key'}`;
+      key.dataset.note = note;
+      key.dataset.octave = octave;
+      key.dataset.noteId = noteId;
+      key.setAttribute('aria-label', `${note} ${octave}`);
+      if (midi === 60) key.classList.add('middle-c');
 
-        key.type = 'button';
-        key.className = `key ${isBlack ? 'black-key' : 'white-key'}`;
-        key.dataset.note = note;
-        key.dataset.octave = octave;
-        key.dataset.noteId = noteId;
-        key.setAttribute('aria-label', `${note} ${octave}`);
-
-        // The note name, with the computer-keyboard letter underneath
+      if (isBlack) {
+        const width = this.blackKeyRatio;
+        key.style.left = `${((whitesSoFar - width / 2) / this.whiteKeyCount) * 100}%`;
+        key.style.width = `${(width / this.whiteKeyCount) * 100}%`;
+      } else {
+        // White keys show the note name (every C also shows its octave)
         const nameLabel = document.createElement('span');
         nameLabel.className = 'note-name';
-        nameLabel.textContent = note;
-        const hintLabel = document.createElement('span');
-        hintLabel.className = 'kbd-hint';
-        hintLabel.textContent = hints[noteId] || '';
-        key.append(nameLabel, hintLabel);
+        nameLabel.textContent = note === 'C' ? `C${octave}` : note;
+        key.appendChild(nameLabel);
+        whitesSoFar++;
+      }
 
-        if (isBlack) {
-          const centre = o * 7 + this.blackKeyPos[note];
-          const width = this.blackKeyRatio;
-          key.style.left = `${((centre - width / 2) / whiteCount) * 100}%`;
-          key.style.width = `${(width / whiteCount) * 100}%`;
+      // The computer-keyboard letter (filled in by updateHints)
+      const hintLabel = document.createElement('span');
+      hintLabel.className = 'kbd-hint';
+      key.appendChild(hintLabel);
+
+      // Pointer events cover mouse, touch and pen.
+      key.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (key.hasPointerCapture && key.hasPointerCapture(e.pointerId)) {
+          key.releasePointerCapture(e.pointerId); // lets you slide across keys
         }
-
-        // Pointer events cover mouse, touch and pen.
-        key.addEventListener('pointerdown', (e) => {
-          e.preventDefault();
-          if (key.hasPointerCapture && key.hasPointerCapture(e.pointerId)) {
-            key.releasePointerCapture(e.pointerId); // lets you slide across keys
-          }
-          this.playNote(note, octave, key);
-        });
-        key.addEventListener('pointerenter', (e) => {
-          if (e.buttons === 1) this.playNote(note, octave, key);
-        });
-        ['pointerup', 'pointerleave', 'pointercancel'].forEach(type => {
-          key.addEventListener(type, () => this.stopNote(noteId, key));
-        });
-
-        wrap.appendChild(key);
+        this.playNote(note, octave, key);
       });
+      key.addEventListener('pointerenter', (e) => {
+        if (e.buttons === 1) this.playNote(note, octave, key);
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(type => {
+        key.addEventListener(type, () => this.stopNote(noteId, key));
+      });
+
+      wrap.appendChild(key);
     }
 
     piano.appendChild(wrap);
     this.updateScaleClasses();
+    this.updateHints();
     this.updateOctaveLabel();
   }
 
@@ -288,7 +316,6 @@ class PianoApp {
     this.activeNotes.set(noteId, { oscillators, voiceGain, filter, release: settings.release });
 
     if (keyElement) keyElement.classList.add('active');
-    document.getElementById('note-display').textContent = `${note} ${octave}`;
   }
 
   stopNote(noteId, keyElement) {
@@ -387,15 +414,16 @@ class PianoApp {
     window.addEventListener('blur', () => this.stopAll());
   }
 
-  // Plays the selected scale upwards from the root note.
+  // Plays the selected scale upwards from the root note, starting near middle C.
   playDemo() {
     this.stopAll();
 
+    const demoOctave = 4;
     const rootIndex = this.notes.indexOf(this.rootNote);
     const semitones = [...this.scalePatterns[this.currentScale], 12].map(s => rootIndex + s);
     const sequence = semitones.map(s => ({
       note: this.notes[s % 12],
-      octave: this.startOctave + Math.floor(s / 12)
+      octave: demoOctave + Math.floor(s / 12)
     }));
 
     sequence.forEach(({ note, octave }, i) => {
