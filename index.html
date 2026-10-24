@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Music&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css?v=5" />
+    <link rel="stylesheet" href="style.css?v=6" />
   </head>
   <body>
     <div class="app-shell">
@@ -75,8 +75,17 @@
           </label>
           <button id="staff-clear" class="staff-clear">Clear</button>
         </div>
-        <div class="staff-canvas">
-          <canvas id="staff" aria-label="Notes you play, shown on a music staff"></canvas>
+
+        <div class="staff-body">
+          <div class="staff-canvas">
+            <canvas id="staff" aria-label="Notes you play, shown on a music staff"></canvas>
+          </div>
+
+          <aside id="chord-card" class="chord-card" aria-live="polite">
+            <span id="chord-label" class="chord-label">Play a key</span>
+            <strong id="chord-name">—</strong>
+            <div id="chord-notes" class="chord-notes"></div>
+          </aside>
         </div>
       </section>
 
@@ -111,7 +120,7 @@
       <section id="piano" class="piano" aria-label="Piano keyboard" aria-live="polite"></section>
     </div>
 
-    <script src="Staff.js?v=5"></script>
-    <script src="script.js?v=5"></script>
+    <script src="Staff.js?v=6"></script>
+    <script src="script.js?v=6"></script>
   </body>
 </html>
