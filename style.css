@@ -58,10 +58,10 @@ button, input, select {
 
 /* ---- Page layout: controls | staff | controls, piano underneath ---- */
 .app-shell {
-  /* Width of one white key. The piano is 57 white keys wide: 52 real keys plus 5 spare
+  /* Width of one white key. The piano area is 43 white keys wide: 38 real keys plus 5 spare
      on the left, so middle C lands exactly in the centre of the screen and the
      piano runs from the left edge of the screen to the right edge. */
-  --kw: max(calc(100vw / 57), 14px);
+  --kw: max(calc(100vw / 43), 14px);
 
   position: relative;
   width: 100vw;
@@ -338,10 +338,10 @@ button, input, select {
   to   { transform: scale(1); opacity: 1; }
 }
 
-/* ---- Piano: edge to edge, as big as the screen allows ---- */
+/* ---- Piano: edge to edge. Key length is 6.4 times the key width, like a real piano ---- */
 .piano {
-  height: min(46vh, calc(var(--kw) * 12.5));
-  min-height: 130px;
+  height: min(46vh, calc(var(--kw) * 6.4 + 14px));
+  min-height: 110px;
   margin: 0 -18px;
   padding: 14px 0 0;
   border-radius: 18px 18px 0 0;
@@ -354,12 +354,12 @@ button, input, select {
   overflow: hidden;
 }
 
-/* 52 white keys, pushed 5 key-widths in from the left so middle C is centred */
+/* 38 white keys, pushed 5 key-widths in from the left so middle C is centred */
 .keys {
   position: relative;
   display: flex;
   flex: none;
-  width: calc(var(--kw) * 52);
+  width: calc(var(--kw) * 38);
   height: 100%;
   margin-left: calc(var(--kw) * 5);
 }
@@ -378,13 +378,13 @@ button, input, select {
 }
 
 .note-name {
-  font-size: clamp(9px, calc(var(--kw) * 0.34), 14px);
+  font-size: clamp(9px, calc(var(--kw) * 0.34), 16px);
   font-weight: 800;
   line-height: 1;
 }
 
 .kbd-hint {
-  font-size: clamp(8px, calc(var(--kw) * 0.28), 12px);
+  font-size: clamp(8px, calc(var(--kw) * 0.28), 13px);
   font-weight: 600;
   line-height: 1;
   min-height: 1em;
