@@ -42,17 +42,17 @@ class PianoApp {
   constructor() {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    // The piano is always the full 88 keys: A0 (MIDI 21) up to C8 (MIDI 108).
-    this.firstMidi = 21;
-    this.lastMidi = 108;
-    this.whiteKeyCount = 52;
+    // The piano runs from A1 (MIDI 33) up to C7 (MIDI 96): 64 keys, 38 of them white.
+    this.firstMidi = 33;
+    this.lastMidi = 96;
+    this.whiteKeyCount = 38;
 
     // The computer keyboard plays two octaves at a time:
     // the Z row starts on C of startOctave, the Q row on C one octave higher.
     // With startOctave = 3, the Q key is middle C (C4).
     this.startOctave = 3;
-    this.minOctave = 0;
-    this.maxOctave = 7;
+    this.minOctave = 2;
+    this.maxOctave = 6;
 
     this.volume = 0.72;
     this.sustain = 0.4;
