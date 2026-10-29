@@ -7,7 +7,815 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Music&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css?v=7" />
+    <style>
+:root {
+  --bg-1: #1a0f09;
+  --bg-2: #2d1b12;
+  --bg-3: #3c2617;
+
+  --app-shell-top: rgba(111, 71, 49, 0.92);
+  --app-shell-mid: rgba(56, 31, 18, 0.92);
+  --app-shell-bottom: rgba(28, 16, 11, 0.96);
+  --topbar-top: rgba(77, 49, 32, 0.9);
+  --topbar-bottom: rgba(46, 27, 17, 0.75);
+  --toolbar-bg-top: rgba(101, 63, 42, 0.8);
+  --toolbar-bg-bottom: rgba(89, 56, 38, 0.72);
+  --panel-bg-top: rgba(53, 31, 22, 0.9);
+  --panel-bg-bottom: rgba(29, 17, 12, 0.8);
+  --piano-top: rgba(69, 42, 27, 0.98);
+  --piano-mid: rgba(42, 27, 18, 0.96);
+  --piano-bottom: rgba(21, 12, 9, 0.98);
+
+  --white-key: #fefaf4;
+  --white-key-2: #f4ecdf;
+  --white-key-3: #e8dcc4;
+
+  --black-key-1: #120b08;
+  --black-key-2: #1f130f;
+  --black-key-3: #2d1d15;
+
+  --gold: #d8b06a;
+  --gold-soft: #f3d8a6;
+  --text: #f4e7d6;
+  --muted: #d7b98a;
+  --ink: #2b170f;
+  --button-grad-1: #ab6d43;
+  --button-grad-2: #d49d5d;
+  --scale-glow: rgba(248, 218, 165, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(211, 176, 106, 0.18), transparent 30%),
+    linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 38%, var(--bg-3) 100%);
+  color: var(--text);
+}
+
+body {
+  overflow: hidden; /* everything fits on one screen */
+}
+
+button, input, select {
+  font: inherit;
+}
+
+/* ---- Page layout: controls | staff | controls, piano underneath ---- */
+.app-shell {
+  /* Width of one white key. The piano is 43 white keys wide (C1 to C7), so it runs from the
+     left edge of the screen to the right edge, with middle C exactly in the centre. */
+  --kw: max(calc(100vw / 43), 14px);
+
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 150px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px 16px;
+  padding: 16px 18px 0;
+  background:
+    linear-gradient(180deg, var(--app-shell-top) 0%, var(--app-shell-mid) 24%, var(--app-shell-bottom) 100%);
+}
+
+.app-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 0,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(0, 0, 0, 0.02) 2px,
+      rgba(0, 0, 0, 0.02) 5px
+    );
+  pointer-events: none;
+}
+
+.side,
+.staff-panel,
+.artist-panel,
+.piano {
+  position: relative;
+  z-index: 1;
+}
+
+.side-left   { grid-column: 1; grid-row: 1; }
+.staff-panel { grid-column: 2; grid-row: 1; }
+.side-right  { grid-column: 3; grid-row: 1; }
+.piano       { grid-column: 1 / -1; grid-row: 2; }
+
+/* When an artist panel is open (Chopin ...) it takes a column of its own next to the left controls */
+.artist-panel { grid-column: 2; grid-row: 1; }
+
+.app-shell.artist-open {
+  grid-template-columns: 150px clamp(250px, 22vw, 340px) minmax(0, 1fr) 150px;
+}
+
+.app-shell.artist-open .staff-panel { grid-column: 3; }
+.app-shell.artist-open .side-right  { grid-column: 4; }
+
+/* ---- Minimal side controls ---- */
+.side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  justify-content: safe center; /* if the screen is short, scroll instead of cutting the top off */
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.brand h1 {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--gold-soft);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
+}
+
+.ctl {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ctl select,
+.artist-panel select,
+.staff-header select {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  background: rgba(24, 14, 10, 0.55);
+  color: var(--text);
+  border: 1px solid rgba(227, 190, 141, 0.2);
+  border-radius: 8px;
+}
+
+.ctl input[type="range"] {
+  width: 100%;
+  accent-color: var(--button-grad-2);
+}
+
+.keys-shift {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.keys-shift button {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: 17px;
+  line-height: 1;
+  color: #fffaf5;
+  background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
+  cursor: pointer;
+}
+
+#octave-label {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  color: var(--gold-soft);
+}
+
+.demo-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fffaf5;
+  background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 8px 16px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: transform 0.18s ease;
+}
+
+.demo-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ---- Artist panel (Chopin ...) ---- */
+.artist-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(227, 190, 141, 0.2);
+  background: linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom));
+}
+
+.artist-panel[hidden] {
+  display: none;
+}
+
+.artist-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.artist-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--gold-soft);
+}
+
+.artist-icon {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(227, 190, 141, 0.3);
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 1;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.artist-icon:hover {
+  color: var(--gold-soft);
+}
+
+.artist-blurb,
+.artist-info,
+.artist-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.artist-note {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.artist-panel h3 {
+  margin: 8px 0 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.artist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.artist-chord {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 8px;
+  text-align: left;
+  border-radius: 9px;
+  border: 1px solid rgba(227, 190, 141, 0.25);
+  background: rgba(24, 14, 10, 0.5);
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.artist-chord strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gold-soft);
+}
+
+.artist-chord small {
+  font-size: 10px;
+  line-height: 1.25;
+  color: var(--muted);
+}
+
+.artist-chord:hover {
+  border-color: rgba(243, 216, 166, 0.55);
+}
+
+.artist-chord.playing {
+  background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
+  border-color: transparent;
+}
+
+.artist-chord.playing strong,
+.artist-chord.playing small {
+  color: #fffaf5;
+}
+
+.artist-row {
+  display: flex;
+  gap: 6px;
+}
+
+.artist-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.artist-play {
+  flex: none;
+  width: 32px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #fffaf5;
+  background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
+  cursor: pointer;
+}
+
+.artist-now {
+  min-height: 1.4em;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold-soft);
+}
+
+/* ---- Staff reel + chord card ---- */
+.staff-panel {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(227, 190, 141, 0.2);
+  background: linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom));
+}
+
+.staff-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  margin-bottom: 8px;
+}
+
+.staff-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-toggle input {
+  accent-color: var(--button-grad-2);
+}
+
+.staff-header select {
+  width: auto;
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+/* The 7th / 9th / 11th / 13th boxes sit together as one group */
+.chord-sizes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.staff-group-label {
+  color: var(--gold-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.staff-clear {
+  margin-left: auto;
+  border: 1px solid rgba(227, 190, 141, 0.25);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-clear:hover {
+  color: var(--gold-soft);
+}
+
+.staff-body {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* The staff: about half the height it was before */
+.staff-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: clamp(200px, 29vh, 330px);
+}
+
+#staff {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--white-key), var(--white-key-3));
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* The chord card, to the right of the staff */
+.chord-card {
+  flex: 0 0 clamp(190px, 16vw, 270px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px;
+  text-align: center;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 190, 141, 0.3);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(243, 216, 166, 0.16), transparent 62%),
+    linear-gradient(160deg, rgba(20, 12, 8, 0.78), rgba(44, 27, 18, 0.66));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 203, 0.12),
+    0 0 30px rgba(216, 176, 106, 0.12);
+}
+
+.chord-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#chord-name {
+  max-width: 100%;
+  font-size: clamp(2rem, 3.2vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: var(--gold-soft);
+  text-shadow: 0 0 22px var(--gold), 0 2px 12px rgba(0, 0, 0, 0.5);
+  overflow-wrap: anywhere;
+}
+
+.chord-notes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  min-height: 2rem;
+}
+
+.chord-notes span {
+  min-width: 2.2rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: clamp(0.95rem, 1.3vw, 1.3rem);
+  font-weight: 800;
+  color: var(--gold-soft);
+  background: rgba(243, 216, 166, 0.12);
+  border: 1px solid rgba(243, 216, 166, 0.35);
+}
+
+.chord-card.pop #chord-name {
+  animation: chord-pop 0.35s ease;
+}
+
+@keyframes chord-pop {
+  from { transform: scale(0.85); opacity: 0.35; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ---- Piano: edge to edge. Key length is 6.4 times the key width, like a real piano ---- */
+.piano {
+  height: min(46vh, calc(var(--kw) * 6.4 + 14px));
+  min-height: 110px;
+  margin: 0 -18px;
+  padding: 14px 0 0;
+  border-radius: 18px 18px 0 0;
+  background:
+    linear-gradient(180deg, var(--piano-top) 0%, var(--piano-mid) 40%, var(--piano-bottom) 100%);
+  border-top: 1.5px solid rgba(227, 190, 141, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 -10px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+/* 43 white keys, C1 to C7: exactly one screen wide, middle C in the centre */
+.keys {
+  position: relative;
+  display: flex;
+  flex: none;
+  width: calc(var(--kw) * 43);
+  height: 100%;
+}
+
+.key {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.key:focus-visible {
+  outline: 2px solid var(--gold-soft);
+  outline-offset: -3px;
+  z-index: 3;
+}
+
+.note-name {
+  font-size: clamp(9px, calc(var(--kw) * 0.34), 16px);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.kbd-hint {
+  font-size: clamp(8px, calc(var(--kw) * 0.28), 13px);
+  font-weight: 600;
+  line-height: 1;
+  min-height: 1em;
+  opacity: 0.55;
+}
+
+.middle-c .note-name {
+  text-decoration: underline;
+}
+
+/* White keys */
+.white-key {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 0 clamp(10px, calc(var(--kw) * 0.7), 24px);
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(180deg, var(--white-key) 0%, var(--white-key-2) 38%, var(--white-key-3) 100%);
+  border: 1px solid rgba(39, 20, 12, 0.18);
+  color: rgba(43, 23, 15, 0.7);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.white-key::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.04) 2px,
+    rgba(120, 81, 52, 0.02) 2px,
+    rgba(120, 81, 52, 0.02) 4px
+  );
+  border-radius: 0 0 10px 10px;
+  pointer-events: none;
+}
+
+.white-key:hover {
+  background: linear-gradient(180deg, #fffdf9 0%, #f8f1e8 42%, #eadbc0 100%);
+}
+
+/* Black keys (their left and width are set by script.js, in %) */
+.black-key {
+  position: absolute;
+  top: 0;
+  height: 62%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 0 12px;
+  border-radius: 0 0 7px 7px;
+  background: linear-gradient(180deg, var(--black-key-2), var(--black-key-1));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  z-index: 2;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.black-key::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%, rgba(0, 0, 0, 0.1));
+  border-radius: 0 0 7px 7px;
+  pointer-events: none;
+}
+
+.black-key:hover {
+  background: linear-gradient(180deg, var(--black-key-3), var(--black-key-2));
+}
+
+/* ---- Scale highlighting ---- */
+
+/* Notes outside the scale: dark and "switched off" */
+.white-key.out-of-scale {
+  filter: brightness(0.3) saturate(0.5);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.black-key.out-of-scale {
+  filter: brightness(0.4);
+}
+
+.out-of-scale .note-name,
+.out-of-scale .kbd-hint {
+  opacity: 0.35;
+}
+
+/* Notes in the scale: bright, raised, glowing, with a gold strip */
+.white-key.in-scale {
+  z-index: 1;
+  background: linear-gradient(180deg, #fffdf9 0%, #f8f1e8 38%, #eadbc0 100%);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.9),
+    0 0 30px var(--scale-glow),
+    0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.white-key.in-scale .note-name {
+  color: var(--ink);
+}
+
+.black-key.in-scale {
+  background: linear-gradient(180deg, #5a4030, #2a1a12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 22px var(--scale-glow),
+    0 12px 18px rgba(0, 0, 0, 0.38);
+}
+
+.white-key.in-scale::after,
+.black-key.in-scale::after {
+  content: '';
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  bottom: 7px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--gold);
+  box-shadow: 0 0 10px var(--scale-glow);
+  pointer-events: none;
+}
+
+/* Root note: warm tint and a bigger strip */
+.white-key.is-root {
+  background: linear-gradient(180deg, #fff3d6 0%, #f9dfaa 55%, #f0c777 100%);
+}
+
+.black-key.is-root {
+  background: linear-gradient(180deg, #7a5336, #3a2416);
+}
+
+.white-key.is-root::after,
+.black-key.is-root::after {
+  left: 15%;
+  right: 15%;
+  height: 7px;
+  background: var(--gold-soft);
+  box-shadow: 0 0 16px var(--gold);
+}
+
+/* Pressed keys always win, so you can see what is sounding */
+.white-key.active {
+  filter: none;
+  background: linear-gradient(180deg, #ffd98a 0%, #f0b64f 100%);
+  transform: translateY(2px);
+  box-shadow: 0 0 24px var(--scale-glow), inset 0 2px 0 rgba(255, 255, 255, 0.6);
+}
+
+.black-key.active {
+  filter: none;
+  background: linear-gradient(180deg, #b27a4f, #6b442f);
+  transform: translateY(2px);
+  box-shadow: 0 0 20px var(--scale-glow);
+}
+
+.key.active .note-name,
+.key.active .kbd-hint {
+  opacity: 1;
+}
+
+/* ---- Small screens: stack everything and let the piano scroll sideways ---- */
+@media (max-width: 900px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-shell,
+  .app-shell.artist-open {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    padding: 12px 12px 0;
+  }
+
+  .side-left,
+  .artist-panel,
+  .staff-panel,
+  .side-right,
+  .piano,
+  .app-shell.artist-open .staff-panel,
+  .app-shell.artist-open .side-right {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .artist-panel {
+    max-height: 70vh;
+  }
+
+  .side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    overflow-y: visible;
+  }
+
+  .side > * {
+    flex: 1 1 130px;
+  }
+
+  .staff-body {
+    flex-direction: column;
+  }
+
+  .staff-canvas {
+    flex: none;
+    height: 200px;
+  }
+
+  .chord-card {
+    flex: none;
+  }
+
+  .piano {
+    height: 170px;
+    margin: 0 -12px;
+    overflow-x: auto;
+  }
+}
+    </style>
   </head>
   <body>
     <div class="app-shell">
@@ -19,6 +827,8 @@
           <select id="scale-select">
             <option value="major">Major</option>
             <option value="minor">Minor</option>
+            <option value="harmonic-minor">Harmonic Minor</option>
+            <option value="melodic-minor">Melodic Minor</option>
             <option value="pentatonic-major">Pentatonic Major</option>
             <option value="pentatonic-minor">Pentatonic Minor</option>
             <option value="blues">Blues</option>
@@ -26,6 +836,7 @@
             <option value="phrygian">Phrygian</option>
             <option value="lydian">Lydian</option>
             <option value="mixolydian">Mixolydian</option>
+            <option value="chromatic">Chromatic</option>
           </select>
         </label>
 
@@ -33,17 +844,25 @@
           <span>Root note</span>
           <select id="root-note-select">
             <option value="C">C</option>
-            <option value="C#">C#</option>
+            <option value="C#">C♯ / D♭</option>
             <option value="D">D</option>
-            <option value="D#">D#</option>
+            <option value="D#">D♯ / E♭</option>
             <option value="E">E</option>
             <option value="F">F</option>
-            <option value="F#">F#</option>
+            <option value="F#">F♯ / G♭</option>
             <option value="G">G</option>
-            <option value="G#">G#</option>
+            <option value="G#">G♯ / A♭</option>
             <option value="A">A</option>
-            <option value="A#">A#</option>
+            <option value="A#">A♯ / B♭</option>
             <option value="B">B</option>
+          </select>
+        </label>
+
+        <label class="ctl" for="artist-select">
+          <span>Artist</span>
+          <select id="artist-select">
+            <option value="">None</option>
+            <option value="chopin">Chopin</option>
           </select>
         </label>
 
@@ -60,67 +879,4 @@
         <div class="ctl">
           <span>Computer keys</span>
           <div class="keys-shift">
-            <button id="octave-down" aria-label="Lower computer keyboard octave">−</button>
-            <span id="octave-label">C3–B4</span>
-            <button id="octave-up" aria-label="Raise computer keyboard octave">+</button>
-          </div>
-        </div>
-      </aside>
-
-      <section class="staff-panel">
-        <div class="staff-header">
-          <label class="staff-toggle">
-            <input type="checkbox" id="show-names" checked />
-            Show note names
-          </label>
-          <button id="staff-clear" class="staff-clear">Clear</button>
-        </div>
-
-        <div class="staff-body">
-          <div class="staff-canvas">
-            <canvas id="staff" aria-label="Notes you play, shown on a music staff"></canvas>
-          </div>
-
-          <aside id="chord-card" class="chord-card" aria-live="polite">
-            <span id="chord-label" class="chord-label">Play a key</span>
-            <strong id="chord-name">—</strong>
-            <div id="chord-notes" class="chord-notes"></div>
-          </aside>
-        </div>
-      </section>
-
-      <aside class="side side-right">
-        <label class="ctl" for="volume">
-          <span>Volume</span>
-          <input id="volume" type="range" min="0" max="100" value="72" />
-        </label>
-
-        <label class="ctl" for="sustain">
-          <span>Sustain</span>
-          <input id="sustain" type="range" min="0" max="100" value="40" />
-        </label>
-
-        <label class="ctl" for="reverb">
-          <span>Reverb</span>
-          <input id="reverb" type="range" min="0" max="100" value="30" />
-        </label>
-
-        <label class="ctl" for="tone">
-          <span>Tone</span>
-          <select id="tone">
-            <option value="piano">Piano</option>
-            <option value="bright">Bright</option>
-            <option value="warm">Warm</option>
-          </select>
-        </label>
-
-        <button id="demo-btn" class="demo-btn">Play demo</button>
-      </aside>
-
-      <section id="piano" class="piano" aria-label="Piano keyboard" aria-live="polite"></section>
-    </div>
-
-    <script src="Staff.js?v=6"></script>
-    <script src="script.js?v=7"></script>
-  </body>
-</html>
+            <button id="octave-down" aria-label="Lower computer keyboard
