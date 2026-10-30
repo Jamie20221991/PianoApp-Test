@@ -42,10 +42,11 @@ class PianoApp {
   constructor() {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    // The piano runs from A1 (MIDI 33) up to C7 (MIDI 96): 64 keys, 38 of them white.
-    this.firstMidi = 33;
+    // The piano runs from C1 (MIDI 24) up to C7 (MIDI 96): 73 keys, 43 of them white.
+    // Middle C has 21 white keys on each side, so it sits exactly in the centre.
+    this.firstMidi = 24;
     this.lastMidi = 96;
-    this.whiteKeyCount = 38;
+    this.whiteKeyCount = 43;
 
     // The computer keyboard plays two octaves at a time:
     // the Z row starts on C of startOctave, the Q row on C one octave higher.
@@ -86,7 +87,9 @@ class PianoApp {
       'dorian': [0, 2, 3, 5, 7, 9, 10],
       'phrygian': [0, 1, 3, 5, 7, 8, 10],
       'lydian': [0, 2, 4, 6, 7, 9, 11],
-      'mixolydian': [0, 2, 4, 5, 7, 9, 10]
+      'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+      'harmonic-minor': [0, 2, 3, 5, 7, 8, 11],
+      'melodic-minor': [0, 2, 3, 5, 7, 9, 11]
     };
 
     this.initAudio();
@@ -439,5 +442,5 @@ class PianoApp {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  new PianoApp();
+  window.pianoApp = new PianoApp();
 });
