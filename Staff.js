@@ -28,19 +28,30 @@ const SCALES = {
   'dorian': [0, 2, 3, 5, 7, 9, 10],
   'phrygian': [0, 1, 3, 5, 7, 8, 10],
   'lydian': [0, 2, 4, 6, 7, 9, 11],
-  'mixolydian': [0, 2, 4, 5, 7, 9, 10]
+  'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+  'harmonic-minor': [0, 2, 3, 5, 7, 8, 11],
+  'melodic-minor': [0, 2, 3, 5, 7, 9, 11]
 };
 
-// The chord you get by clicking a key: stack two thirds on that note, using the chosen scale.
+// Flat names for the black keys (used when "Show flats" is ticked)
+const FLAT_NAMES = { 'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb' };
+
+// The chord you get by clicking a key: stack thirds on that note, using the chosen scale.
+// size is the number of notes (3 = triad, 4 = seventh, 5 = ninth ...).
 // Returns semitones above the clicked note, e.g. [0, 4, 7] for a major chord.
-function triadFor(pitchClass, scaleName, rootName) {
+function chordFor(pitchClass, scaleName, rootName, size = 3) {
   const pattern = SCALES[scaleName] || SCALES.major;
   const rootPc = Math.max(0, NOTE_NAMES.indexOf(rootName));
   const degree = pattern.indexOf((pitchClass - rootPc + 12) % 12);
-  if (degree === -1) return [0, 4, 7]; // note outside the scale: plain major chord
+  if (degree === -1) return [0, 4, 7, 10, 14, 17].slice(0, size); // outside the scale: dominant-style stack
   const n = pattern.length;
-  const above = (steps) => (pattern[(degree + steps) % n] - pattern[degree] + 12) % 12;
-  return [0, above(2), above(4)];
+  const above = (steps) => {
+    const i = degree + steps;
+    return pattern[i % n] + 12 * Math.floor(i / n) - pattern[degree];
+  };
+  const out = [];
+  for (let k = 0; k < size; k++) out.push(k === 0 ? 0 : above(k * 2));
+  return out;
 }
 
 // Octave-shift marks, like on printed music: notes too high or too low for the staff
@@ -54,6 +65,7 @@ class StaffReel {
     this.readout = readout || null; // the chord card: { card, label, name, notes }
     this.events = [];        // { t, step, sharp, name, octave, midi }
     this.showNames = true;
+    this.useFlats = false;
     this.speed = 160;        // pixels per second
     this.groupWindow = 120;  // ms: notes pressed this close together are drawn as a chord
     this.lastGroupTime = 0;
@@ -97,12 +109,16 @@ class StaffReel {
     } else {
       this.lastGroupTime = now;
     }
+    const isBlack = note.includes('#');
+    const flat = isBlack && this.useFlats;
+    const shownName = flat ? FLAT_NAMES[note] : note;
     this.events.push({
       t,
       // Position on the staff, counted in letter steps: C4 (middle C) = 28
-      step: octave * 7 + this.letters[note[0]],
-      sharp: note.includes('#'),
-      name: note,
+      step: octave * 7 + this.letters[shownName[0]],
+      sharp: isBlack && !flat,
+      flat,
+      name: shownName,
       octave,
       midi: (octave + 1) * 12 + NOTE_NAMES.indexOf(note)
     });
@@ -113,6 +129,10 @@ class StaffReel {
   setShowNames(value) {
     this.showNames = value;
     this.draw();
+  }
+
+  setUseFlats(value) {
+    this.useFlats = value;
   }
 
   clear() {
@@ -333,7 +353,7 @@ class StaffReel {
     const left = 8;
     const right = w - 8;
 
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
     [[30, 38], [18, 26]].forEach(([low, high]) => {
       for (let s = low; s <= high; s += 2) {
@@ -391,7 +411,8 @@ class StaffReel {
     ctx.fill();
     ctx.restore();
 
-    if (e.sharp) this.drawSharp(x - rx - half * 2.2, y);
+    if (e.sharp) this.drawSharp(x - rx - half * 1.7, y);
+    if (e.flat) this.drawFlat(x - rx - half * 1.5, y);
 
     // Octave-shift mark (8va, 8vb ...) to the left of the note
     if (shift) {
@@ -413,11 +434,12 @@ class StaffReel {
     ctx.globalAlpha = 1;
   }
 
-  // Sharp sign drawn from lines, so it does not depend on any font
+  // Sharp sign drawn from lines, so it does not depend on any font (kept small)
   drawSharp(x, y) {
-    const { ctx, half: s } = this;
+    const { ctx } = this;
+    const s = this.half * 0.72;
 
-    ctx.lineWidth = 1.1;
+    ctx.lineWidth = 1.3;
     ctx.beginPath();
     ctx.moveTo(x - s * 0.45, y - s * 2);
     ctx.lineTo(x - s * 0.45, y + s * 2.2);
@@ -431,6 +453,23 @@ class StaffReel {
     ctx.lineTo(x + s, y - s * 1.0);
     ctx.moveTo(x - s, y + s * 1.05);
     ctx.lineTo(x + s, y + s * 0.35);
+    ctx.stroke();
+  }
+
+  // Flat sign: a stem with a rounded bowl, also drawn from lines
+  drawFlat(x, y) {
+    const { ctx } = this;
+    const s = this.half * 0.72;
+
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.5, y - s * 3);
+    ctx.lineTo(x - s * 0.5, y + s * 1.2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.5, y + s * 1.2);
+    ctx.bezierCurveTo(x + s * 1.6, y + s * 0.2, x + s * 1.4, y - s * 1.6, x - s * 0.5, y - s * 0.7);
     ctx.stroke();
   }
 }
@@ -469,14 +508,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // New checkbox "Click plays a chord", added here so index.html needs no change
+  // Extra controls, added here so index.html needs no change
   const chordToggle = document.createElement('label');
   chordToggle.className = 'staff-toggle';
   chordToggle.innerHTML = '<input type="checkbox" id="chord-mode" checked /> Click plays a chord';
+
+  const sizes = document.createElement('div');
+  sizes.className = 'chord-sizes';
+  sizes.innerHTML = 'Bigger chords:' + [4, 5, 6].map((n) =>
+    `<label><input type="checkbox" class="chord-size" value="${n}" /> ${n}-note</label>`).join('');
+
+  const flatToggle = document.createElement('label');
+  flatToggle.className = 'staff-toggle';
+  flatToggle.innerHTML = '<input type="checkbox" id="use-flats" /> Show flats (♭)';
+
   const header = document.querySelector('.staff-header');
-  if (header) header.insertBefore(chordToggle, clear || null);
+  if (header) {
+    header.insertBefore(chordToggle, clear || null);
+    header.insertBefore(sizes, clear || null);
+    header.insertBefore(flatToggle, clear || null);
+  }
   const chordBox = chordToggle.querySelector('input');
   chordBox.addEventListener('change', (e) => e.target.blur());
+  sizes.querySelectorAll('input').forEach((box) =>
+    box.addEventListener('change', (e) => e.target.blur()));
+  flatToggle.querySelector('input').addEventListener('change', (e) => {
+    staff.setUseFlats(e.target.checked);
+    e.target.blur();
+  });
+
+  // The biggest ticked size wins; with nothing ticked, clicks play triads
+  const chordSize = () => {
+    const ticked = [...sizes.querySelectorAll('input:checked')].map((b) => Number(b.value));
+    return ticked.length ? Math.max(...ticked) : 3;
+  };
 
   // Remember when the mouse or a finger last pressed a piano key
   // (computer-keyboard presses never play a chord for you, so you can build your own)
@@ -495,10 +560,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const scale = document.getElementById('scale-select');
     const root = document.getElementById('root-note-select');
-    const intervals = triadFor(
+    const intervals = chordFor(
       NOTE_NAMES.indexOf(rootKey.dataset.note),
       scale && scale.value,
-      root && root.value
+      root && root.value,
+      chordSize()
     );
 
     const parts = [];

@@ -58,9 +58,8 @@ button, input, select {
 
 /* ---- Page layout: controls | staff | controls, piano underneath ---- */
 .app-shell {
-  /* Width of one white key. The piano area is 43 white keys wide: 38 real keys plus 5 spare
-     on the left, so middle C lands exactly in the centre of the screen and the
-     piano runs from the left edge of the screen to the right edge. */
+  /* Width of one white key. The piano is 43 white keys wide (C1 to C7), so it fills the
+     screen from edge to edge and middle C lands exactly in the centre. */
   --kw: max(calc(100vw / 43), 14px);
 
   position: relative;
@@ -354,14 +353,13 @@ button, input, select {
   overflow: hidden;
 }
 
-/* 38 white keys, pushed 5 key-widths in from the left so middle C is centred */
+/* 43 white keys: middle C is the 22nd, so it is centred */
 .keys {
   position: relative;
   display: flex;
   flex: none;
-  width: calc(var(--kw) * 38);
+  width: calc(var(--kw) * 43);
   height: 100%;
-  margin-left: calc(var(--kw) * 5);
 }
 
 .key {
@@ -556,6 +554,133 @@ button, input, select {
 .key.active .note-name,
 .key.active .kbd-hint {
   opacity: 1;
+}
+
+/* ---- Chord-size tick boxes ---- */
+.staff-header {
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.chord-sizes {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chord-sizes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.chord-sizes input {
+  accent-color: var(--button-grad-2);
+}
+
+/* ---- Artist panel (Chopin ...) ---- */
+.artist-panel {
+  position: fixed;
+  z-index: 20;
+  top: 16px;
+  left: 184px;
+  width: min(900px, calc(100vw - 380px));
+  max-height: 48vh;
+  overflow-y: auto;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 190, 141, 0.35);
+  background: linear-gradient(160deg, rgba(20, 12, 8, 0.97), rgba(44, 27, 18, 0.97));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.artist-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 16px;
+}
+}
+
+.artist-panel[hidden] {
+  display: none;
+}
+
+.artist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.artist-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--gold-soft);
+}
+
+.artist-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.artist-blurb {
+  margin: 4px 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.artist-panel h3 {
+  margin: 10px 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.artist-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.artist-list button {
+  padding: 5px 11px;
+  border: 1px solid rgba(243, 216, 166, 0.35);
+  border-radius: 999px;
+  background: rgba(243, 216, 166, 0.1);
+  color: var(--gold-soft);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.artist-list button:hover {
+  background: rgba(243, 216, 166, 0.22);
+}
+
+.artist-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+@media (max-width: 900px) {
+  .artist-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+
+  .artist-cols {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---- Small screens: stack everything and let the piano scroll sideways ---- */
