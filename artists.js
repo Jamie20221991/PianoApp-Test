@@ -41,6 +41,71 @@ const ARTISTS = {
         notes: [['G#4', 1], ['G#4', 1], ['G#4', 1], ['G#4', 1], ['A#4', 1.5], ['G#4', 0.5], ['F4', 2]]
       }
     ]
+  },
+  beatles: {
+    name: 'The Beatles',
+    blurb: 'Pop-rock songwriting: bright major keys, pentatonic and blues riffs, and borrowed chords from the minor key.',
+    scales: [
+      { label: 'C major', root: 'C', scale: 'major' },
+      { label: 'G major', root: 'G', scale: 'major' },
+      { label: 'A major', root: 'A', scale: 'major' },
+      { label: 'F major', root: 'F', scale: 'major' },
+      { label: 'G mixolydian', root: 'G', scale: 'mixolydian' },
+      { label: 'A pentatonic minor', root: 'A', scale: 'pentatonic-minor' },
+      { label: 'E blues', root: 'E', scale: 'blues' }
+    ],
+    chords: [
+      { label: 'C maj', root: 'C', intervals: [0, 4, 7] },
+      { label: 'G maj', root: 'G', intervals: [0, 4, 7] },
+      { label: 'A min', root: 'A', intervals: [0, 3, 7] },
+      { label: 'F maj', root: 'F', intervals: [0, 4, 7] },
+      { label: 'G7', root: 'G', intervals: [0, 4, 7, 10] },
+      { label: 'B♭ maj (borrowed)', root: 'A#', intervals: [0, 4, 7] },
+      { label: 'F min (borrowed)', root: 'F', intervals: [0, 3, 7] }
+    ],
+    melodies: [
+      {
+        label: 'Let It Be (chords idea)',
+        notes: [['E4', 1], ['E4', 1], ['E4', 1], ['D4', 1], ['C4', 1], ['C4', 1], ['D4', 1], ['E4', 1], ['G4', 2]]
+      },
+      {
+        label: 'Yesterday (sketch)',
+        notes: [['F4', 1], ['E4', 0.5], ['D4', 0.5], ['D4', 1], ['C4', 1], ['A#3', 1], ['A3', 1], ['G3', 2]]
+      },
+      {
+        label: 'Hey Jude (sketch)',
+        notes: [['C5', 1], ['C5', 0.5], ['A4', 0.5], ['A4', 1], ['G4', 1], ['F4', 1], ['G4', 1], ['A4', 2]]
+      }
+    ]
+  },
+  horner: {
+    name: 'James Horner – The Mask of Zorro',
+    blurb: 'Spanish-flavoured film score: D minor, Phrygian colour, harmonic minor leaps and flamenco-style chords.',
+    scales: [
+      { label: 'D minor', root: 'D', scale: 'minor' },
+      { label: 'D harmonic minor', root: 'D', scale: 'harmonic-minor' },
+      { label: 'E phrygian', root: 'E', scale: 'phrygian' },
+      { label: 'A phrygian', root: 'A', scale: 'phrygian' },
+      { label: 'A harmonic minor', root: 'A', scale: 'harmonic-minor' }
+    ],
+    chords: [
+      { label: 'D min', root: 'D', intervals: [0, 3, 7] },
+      { label: 'A7', root: 'A', intervals: [0, 4, 7, 10] },
+      { label: 'G min', root: 'G', intervals: [0, 3, 7] },
+      { label: 'B♭ maj', root: 'A#', intervals: [0, 4, 7] },
+      { label: 'C maj', root: 'C', intervals: [0, 4, 7] },
+      { label: 'E♭ maj (Phrygian ♭II)', root: 'D#', intervals: [0, 4, 7] }
+    ],
+    melodies: [
+      {
+        label: 'Zorro theme (sketch)',
+        notes: [['D4', 1], ['A4', 1], ['A#4', 0.5], ['A4', 0.5], ['G4', 1], ['F4', 1], ['E4', 1], ['D4', 2]]
+      },
+      {
+        label: 'Spanish run (D harmonic minor)',
+        notes: [['D4', 0.5], ['E4', 0.5], ['F4', 0.5], ['G4', 0.5], ['A4', 0.5], ['A#4', 0.5], ['C#5', 0.5], ['D5', 2]]
+      }
+    ]
   }
 };
 
