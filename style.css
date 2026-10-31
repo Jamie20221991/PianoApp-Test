@@ -734,3 +734,14 @@ button, input, select {
     overflow-x: auto;
   }
 }
+
+.chopin-btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(227, 190, 141, 0.5);
+  background: linear-gradient(160deg, #6b4428, #3b2415);
+  color: #f6e3c8;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chopin-btn:hover { filter: brightness(1.15); }
