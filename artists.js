@@ -185,4 +185,14 @@ document.addEventListener('DOMContentLoaded', () => {
     place();
     e.target.blur();
   });
+
+  const btn = document.getElementById('chopin-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const open = select.value === 'chopin' && !panel.hidden;
+      select.value = open ? '' : 'chopin';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      btn.blur();
+    });
+  }
 });
