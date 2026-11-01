@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glow Piano</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Music&display=swap" rel="stylesheet" />
+    <style>
+:root {
+  --bg-1: #1a0f09;
+  --bg-2: #2d1b12;
+  --bg-3: #3c2617;
+
+  --app-shell-top: rgba(111, 71, 49, 0.92);
+  --app-shell-mid: rgba(56, 31, 18, 0.92);
+  --app-shell-bottom: rgba(28, 16, 11, 0.96);
+  --topbar-top: rgba(77, 49, 32, 0.9);
+  --topbar-bottom: rgba(46, 27, 17, 0.75);
+  --toolbar-bg-top: rgba(101, 63, 42, 0.8);
+  --toolbar-bg-bottom: rgba(89, 56, 38, 0.72);
+  --panel-bg-top: rgba(53, 31, 22, 0.9);
+  --panel-bg-bottom: rgba(29, 17, 12, 0.8);
+  --piano-top: rgba(69, 42, 27, 0.98);
+  --piano-mid: rgba(42, 27, 18, 0.96);
+  --piano-bottom: rgba(21, 12, 9, 0.98);
+
+  --white-key: #fefaf4;
+  --white-key-2: #f4ecdf;
+  --white-key-3: #e8dcc4;
+
+  --black-key-1: #120b08;
+  --black-key-2: #1f130f;
+  --black-key-3: #2d1d15;
+
+  --gold: #d8b06a;
+  --gold-soft: #f3d8a6;
+  --text: #f4e7d6;
+  --muted: #d7b98a;
+  --ink: #2b170f;
+  --button-grad-1: #ab6d43;
+  --button-grad-2: #d49d5d;
+  --scale-glow: rgba(248, 218, 165, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(211, 176, 106, 0.18), transparent 30%),
+    linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 38%, var(--bg-3) 100%);
+  color: var(--text);
+}
+
+body {
+  overflow: hidden; /* everything fits on one screen */
+}
+
+button, input, select {
+  font: inherit;
+}
+
+/* ---- Page layout: controls | staff | controls, piano underneath ---- */
+.app-shell {
+  /* Width of one white key. The piano is 43 white keys wide (C1 to C7), so it fills the
+     screen from edge to edge and middle C lands exactly in the centre. */
+  --kw: max(calc(100vw / 43), 14px);
+
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 150px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px 16px;
+  padding: 16px 18px 0;
+  background:
+    linear-gradient(180deg, var(--app-shell-top) 0%, var(--app-shell-mid) 24%, var(--app-shell-bottom) 100%);
+}
+
+.app-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 0,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(0, 0, 0, 0.02) 2px,
+      rgba(0, 0, 0, 0.02) 5px
+    );
+  pointer-events: none;
+}
+
+.side,
+.staff-panel,
+.piano {
+  position: relative;
+  z-index: 1;
+}
+
+.side-left   { grid-column: 1; grid-row: 1; }
+.staff-panel { grid-column: 2; grid-row: 1; }
+.side-right  { grid-column: 3; grid-row: 1; }
+.piano       { grid-column: 1 / -1; grid-row: 2; }
+
+/* ---- Minimal side controls ---- */
+.side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  min-height: 0;
+}
+
+.brand h1 {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--gold-soft);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
+}
+
+.ctl {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ctl select {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  background: rgba(24, 14, 10, 0.55);
+  color: var(--text);
+  border: 1px solid rgba(227, 190, 141, 0.2);
+  border-radius: 8px;
+}
+
+.ctl input[type="range"] {
+  width: 100%;
+  accent-color: var(--button-grad-2);
+}
+
+.keys-shift {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.keys-shift button {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: 17px;
+  line-height: 1;
+  color: #fffaf5;
+  background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
+  cursor: pointer;
+}
+
+#octave-label {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  color: var(--gold-soft);
+}
+
+.demo-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fffaf5;
+  background: linear-gradient(135deg, var(--button-grad-1), var(--button-grad-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 8px 16px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: transform 0.18s ease;
+}
+
+.demo-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ---- Staff reel + chord card ---- */
+.staff-panel {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(227, 190, 141, 0.2);
+  background: linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom));
+}
+
+.staff-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+.staff-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-toggle input {
+  accent-color: var(--button-grad-2);
+}
+
+.staff-clear {
+  margin-left: auto;
+  border: 1px solid rgba(227, 190, 141, 0.25);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-clear:hover {
+  color: var(--gold-soft);
+}
+
+.staff-body {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* The staff: about half the height it was before */
+.staff-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: clamp(200px, 29vh, 330px);
+}
+
+#staff {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--white-key), var(--white-key-3));
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* The chord card, to the right of the staff */
+.chord-card {
+  flex: 0 0 clamp(190px, 16vw, 270px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px;
+  text-align: center;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 190, 141, 0.3);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(243, 216, 166, 0.16), transparent 62%),
+    linear-gradient(160deg, rgba(20, 12, 8, 0.78), rgba(44, 27, 18, 0.66));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 203, 0.12),
+    0 0 30px rgba(216, 176, 106, 0.12);
+}
+
+.chord-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#chord-name {
+  max-width: 100%;
+  font-size: clamp(2rem, 3.2vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: var(--gold-soft);
+  text-shadow: 0 0 22px var(--gold), 0 2px 12px rgba(0, 0, 0, 0.5);
+  overflow-wrap: anywhere;
+}
+
+.chord-notes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  min-height: 2rem;
+}
+
+.chord-notes span {
+  min-width: 2.2rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: clamp(0.95rem, 1.3vw, 1.3rem);
+  font-weight: 800;
+  color: var(--gold-soft);
+  background: rgba(243, 216, 166, 0.12);
+  border: 1px solid rgba(243, 216, 166, 0.35);
+}
+
+.chord-card.pop #chord-name {
+  animation: chord-pop 0.35s ease;
+}
+
+@keyframes chord-pop {
+  from { transform: scale(0.85); opacity: 0.35; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ---- Piano: edge to edge. Key length is 6.4 times the key width, like a real piano ---- */
+.piano {
+  height: min(46vh, calc(var(--kw) * 6.4 + 14px));
+  min-height: 110px;
+  margin: 0 -18px;
+  padding: 14px 0 0;
+  border-radius: 18px 18px 0 0;
+  background:
+    linear-gradient(180deg, var(--piano-top) 0%, var(--piano-mid) 40%, var(--piano-bottom) 100%);
+  border-top: 1.5px solid rgba(227, 190, 141, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 -10px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+/* 43 white keys: middle C is the 22nd, so it is centred */
+.keys {
+  position: relative;
+  display: flex;
+  flex: none;
+  width: calc(var(--kw) * 43);
+  height: 100%;
+}
+
+.key {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.key:focus-visible {
+  outline: 2px solid var(--gold-soft);
+  outline-offset: -3px;
+  z-index: 3;
+}
+
+.note-name {
+  font-size: clamp(9px, calc(var(--kw) * 0.34), 16px);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.kbd-hint {
+  font-size: clamp(8px, calc(var(--kw) * 0.28), 13px);
+  font-weight: 600;
+  line-height: 1;
+  min-height: 1em;
+  opacity: 0.55;
+}
+
+.middle-c .note-name {
+  text-decoration: underline;
+}
+
+/* White keys */
+.white-key {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 0 clamp(10px, calc(var(--kw) * 0.7), 24px);
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(180deg, var(--white-key) 0%, var(--white-key-2) 38%, var(--white-key-3) 100%);
+  border: 1px solid rgba(39, 20, 12, 0.18);
+  color: rgba(43, 23, 15, 0.7);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.white-key::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.04) 2px,
+    rgba(120, 81, 52, 0.02) 2px,
+    rgba(120, 81, 52, 0.02) 4px
+  );
+  border-radius: 0 0 10px 10px;
+  pointer-events: none;
+}
+
+.white-key:hover {
+  background: linear-gradient(180deg, #fffdf9 0%, #f8f1e8 42%, #eadbc0 100%);
+}
+
+/* Black keys (their left and width are set by script.js, in %) */
+.black-key {
+  position: absolute;
+  top: 0;
+  height: 62%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 0 12px;
+  border-radius: 0 0 7px 7px;
+  background: linear-gradient(180deg, var(--black-key-2), var(--black-key-1));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  z-index: 2;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.black-key::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%, rgba(0, 0, 0, 0.1));
+  border-radius: 0 0 7px 7px;
+  pointer-events: none;
+}
+
+.black-key:hover {
+  background: linear-gradient(180deg, var(--black-key-3), var(--black-key-2));
+}
+
+/* ---- Scale highlighting ---- */
+
+/* Notes outside the scale: dark and "switched off" */
+.white-key.out-of-scale {
+  filter: brightness(0.3) saturate(0.5);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.black-key.out-of-scale {
+  filter: brightness(0.4);
+}
+
+.out-of-scale .note-name,
+.out-of-scale .kbd-hint {
+  opacity: 0.35;
+}
+
+/* Notes in the scale: bright, raised, glowing, with a gold strip */
+.white-key.in-scale {
+  z-index: 1;
+  background: linear-gradient(180deg, #fffdf9 0%, #f8f1e8 38%, #eadbc0 100%);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.9),
+    0 0 30px var(--scale-glow),
+    0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.white-key.in-scale .note-name {
+  color: var(--ink);
+}
+
+.black-key.in-scale {
+  background: linear-gradient(180deg, #5a4030, #2a1a12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 22px var(--scale-glow),
+    0 12px 18px rgba(0, 0, 0, 0.38);
+}
+
+.white-key.in-scale::after,
+.black-key.in-scale::after {
+  content: '';
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  bottom: 7px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--gold);
+  box-shadow: 0 0 10px var(--scale-glow);
+  pointer-events: none;
+}
+
+/* Root note: warm tint and a bigger strip */
+.white-key.is-root {
+  background: linear-gradient(180deg, #fff3d6 0%, #f9dfaa 55%, #f0c777 100%);
+}
+
+.black-key.is-root {
+  background: linear-gradient(180deg, #7a5336, #3a2416);
+}
+
+.white-key.is-root::after,
+.black-key.is-root::after {
+  left: 15%;
+  right: 15%;
+  height: 7px;
+  background: var(--gold-soft);
+  box-shadow: 0 0 16px var(--gold);
+}
+
+/* Pressed keys always win, so you can see what is sounding */
+.white-key.active {
+  filter: none;
+  background: linear-gradient(180deg, #ffd98a 0%, #f0b64f 100%);
+  transform: translateY(2px);
+  box-shadow: 0 0 24px var(--scale-glow), inset 0 2px 0 rgba(255, 255, 255, 0.6);
+}
+
+.black-key.active {
+  filter: none;
+  background: linear-gradient(180deg, #b27a4f, #6b442f);
+  transform: translateY(2px);
+  box-shadow: 0 0 20px var(--scale-glow);
+}
+
+.key.active .note-name,
+.key.active .kbd-hint {
+  opacity: 1;
+}
+
+/* ---- Chord-size tick boxes ---- */
+.staff-header {
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.chord-sizes {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chord-sizes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.chord-sizes input {
+  accent-color: var(--button-grad-2);
+}
+
+/* ---- Artist panel (Chopin ...) ---- */
+.artist-panel {
+  position: fixed;
+  z-index: 20;
+  top: 16px;
+  left: 184px;
+  width: min(900px, calc(100vw - 380px));
+  max-height: 48vh;
+  overflow-y: auto;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 190, 141, 0.35);
+  background: linear-gradient(160deg, rgba(20, 12, 8, 0.97), rgba(44, 27, 18, 0.97));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.artist-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 16px;
+}
+}
+
+.artist-panel[hidden] {
+  display: none;
+}
+
+.artist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.artist-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--gold-soft);
+}
+
+.artist-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.artist-blurb {
+  margin: 4px 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.artist-panel h3 {
+  margin: 10px 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.artist-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.artist-list button {
+  padding: 5px 11px;
+  border: 1px solid rgba(243, 216, 166, 0.35);
+  border-radius: 999px;
+  background: rgba(243, 216, 166, 0.1);
+  color: var(--gold-soft);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.artist-list button:hover {
+  background: rgba(243, 216, 166, 0.22);
+}
+
+.artist-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+@media (max-width: 900px) {
+  .artist-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+
+  .artist-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Small screens: stack everything and let the piano scroll sideways ---- */
+@media (max-width: 900px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-shell {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    padding: 12px 12px 0;
+  }
+
+  .side-left,
+  .staff-panel,
+  .side-right,
+  .piano {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .side > * {
+    flex: 1 1 130px;
+  }
+
+  .staff-body {
+    flex-direction: column;
+  }
+
+  .staff-canvas {
+    flex: none;
+    height: 200px;
+  }
+
+  .chord-card {
+    flex: none;
+  }
+
+  .piano {
+    height: 170px;
+    margin: 0 -12px;
+    overflow-x: auto;
+  }
+}
+
+.chopin-btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(227, 190, 141, 0.5);
+  background: linear-gradient(160deg, #6b4428, #3b2415);
+  color: #f6e3c8;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chopin-btn:hover { filter: brightness(1.15); }
+
+</style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side side-left">
+        <div class="brand"><h1>Glow Piano</h1></div>
+
+        <label class="ctl" for="scale-select">
+          <span>Scale</span>
+          <select id="scale-select">
+            <option value="major">Major</option>
+            <option value="minor">Minor</option>
+            <option value="pentatonic-major">Pentatonic Major</option>
+            <option value="pentatonic-minor">Pentatonic Minor</option>
+            <option value="blues">Blues</option>
+            <option value="dorian">Dorian</option>
+            <option value="phrygian">Phrygian</option>
+            <option value="lydian">Lydian</option>
+            <option value="mixolydian">Mixolydian</option>
+            <option value="harmonic-minor">Harmonic Minor</option>
+            <option value="melodic-minor">Melodic Minor</option>
+          </select>
+        </label>
+
+        <label class="ctl" for="root-note-select">
+          <span>Root note</span>
+          <select id="root-note-select">
+            <option value="C">C</option>
+            <option value="C#">C#</option>
+            <option value="D">D</option>
+            <option value="D#">D#</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="F#">F#</option>
+            <option value="G">G</option>
+            <option value="G#">G#</option>
+            <option value="A">A</option>
+            <option value="A#">A#</option>
+            <option value="B">B</option>
+          </select>
+        </label>
+
+        <label class="ctl" for="artist-select">
+          <span>Artist</span>
+          <select id="artist-select">
+            <option value="">None</option>
+            <option value="chopin">Chopin</option>
+            <option value="beatles">The Beatles</option>
+          </select>
+        </label>
+
+        <button type="button" id="chopin-btn" class="chopin-btn">🎹 Chopin</button>
+
+        <label class="ctl" for="style-select">
+          <span>Finish</span>
+          <select id="style-select">
+            <option value="classic">Classic Walnut</option>
+            <option value="concert">Concert Black</option>
+            <option value="vintage">Vintage Mahogany</option>
+            <option value="modern">Modern Matte</option>
+          </select>
+        </label>
+
+        <div class="ctl">
+          <span>Computer keys</span>
+          <div class="keys-shift">
+            <button id="octave-down" aria-label="Lower computer keyboard octave">−</button>
+            <span id="octave-label">C3–B4</span>
+            <button id="octave-up" aria-label="Raise computer keyboard octave">+</button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="staff-panel">
+        <div class="staff-header">
+          <label class="staff-toggle">
+            <input type="checkbox" id="show-names" checked />
+            Show note names
+          </label>
+          <button id="staff-clear" class="staff-clear">Clear</button>
+        </div>
+
+        <div class="staff-body">
+          <div class="staff-canvas">
+            <canvas id="staff" aria-label="Notes you play, shown on a music staff"></canvas>
+          </div>
+
+          <aside id="chord-card" class="chord-card" aria-live="polite">
+            <span id="chord-label" class="chord-label">Play a key</span>
+            <strong id="chord-name">—</strong>
+            <div id="chord-notes" class="chord-notes"></div>
+          </aside>
+        </div>
+      </section>
+
+      <aside class="side side-right">
+        <label class="ctl" for="volume">
+          <span>Volume</span>
+          <input id="volume" type="range" min="0" max="100" value="72" />
+        </label>
+
+        <label class="ctl" for="sustain">
+          <span>Sustain</span>
+          <input id="sustain" type="range" min="0" max="100" value="40" />
+        </label>
+
+        <label class="ctl" for="reverb">
+          <span>Reverb</span>
+          <input id="reverb" type="range" min="0" max="100" value="30" />
+        </label>
+
+        <label class="ctl" for="tone">
+          <span>Tone</span>
+          <select id="tone">
+            <option value="piano">Piano</option>
+            <option value="bright">Bright</option>
+            <option value="warm">Warm</option>
+          </select>
+        </label>
+
+        <button id="demo-btn" class="demo-btn">Play demo</button>
+      </aside>
+
+      <section id="piano" class="piano" aria-label="Piano keyboard" aria-live="polite"></section>
+    </div>
+
+    <script>
+// StaffReel: shows the notes you play on a scrolling grand staff (treble + bass clef).
+// New notes appear on the right and scroll left, like a tape.
+// It also names chords (C maj, A min, G7 ...) in a card beside the staff,
+// and can play a whole chord when you click a key.
+// This file starts itself (see the bottom), so script.js does not need any changes.
+
+const CLEF_FONT = '"Noto Music", "Segoe UI Symbol", "Apple Symbols", serif';
+
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+// Chord shapes: [name, semitones above the root]
+const CHORDS = [
+  ['maj', [0, 4, 7]], ['min', [0, 3, 7]], ['dim', [0, 3, 6]], ['aug', [0, 4, 8]],
+  ['sus2', [0, 2, 7]], ['sus4', [0, 5, 7]],
+  ['7', [0, 4, 7, 10]], ['maj7', [0, 4, 7, 11]], ['min7', [0, 3, 7, 10]],
+  ['dim7', [0, 3, 6, 9]], ['m7b5', [0, 3, 6, 10]],
+  ['6', [0, 4, 7, 9]], ['min6', [0, 3, 7, 9]], ['add9', [0, 2, 4, 7]],
+  ['5', [0, 7]]
+];
+
+// The same scale shapes as script.js (semitones from the root note)
+const SCALES = {
+  'major': [0, 2, 4, 5, 7, 9, 11],
+  'minor': [0, 2, 3, 5, 7, 8, 10],
+  'pentatonic-major': [0, 2, 4, 7, 9],
+  'pentatonic-minor': [0, 3, 5, 7, 10],
+  'blues': [0, 3, 5, 6, 7, 10],
+  'dorian': [0, 2, 3, 5, 7, 9, 10],
+  'phrygian': [0, 1, 3, 5, 7, 8, 10],
+  'lydian': [0, 2, 4, 6, 7, 9, 11],
+  'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+  'harmonic-minor': [0, 2, 3, 5, 7, 8, 11],
+  'melodic-minor': [0, 2, 3, 5, 7, 9, 11]
+};
+
+// Flat names for the black keys (used when "Show flats" is ticked)
+const FLAT_NAMES = { 'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb' };
+
+// The chord you get by clicking a key: stack thirds on that note, using the chosen scale.
+// size is the number of notes (3 = triad, 4 = seventh, 5 = ninth ...).
+// Returns semitones above the clicked note, e.g. [0, 4, 7] for a major chord.
+function chordFor(pitchClass, scaleName, rootName, size = 3) {
+  const pattern = SCALES[scaleName] || SCALES.major;
+  const rootPc = Math.max(0, NOTE_NAMES.indexOf(rootName));
+  const degree = pattern.indexOf((pitchClass - rootPc + 12) % 12);
+  if (degree === -1) return [0, 4, 7, 10, 14, 17].slice(0, size); // outside the scale: dominant-style stack
+  const n = pattern.length;
+  const above = (steps) => {
+    const i = degree + steps;
+    return pattern[i % n] + 12 * Math.floor(i / n) - pattern[degree];
+  };
+  const out = [];
+  for (let k = 0; k < size; k++) out.push(k === 0 ? 0 : above(k * 2));
+  return out;
+}
+
+// Octave-shift marks, like on printed music: notes too high or too low for the staff
+// are drawn one or two octaves closer, with a small label.
+const SHIFT_MARKS = { '1': '8va', '2': '15ma', '3': '22ma', '-1': '8vb', '-2': '15mb', '-3': '22mb' };
+
+class StaffReel {
+  constructor(canvas, readout) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.readout = readout || null; // the chord card: { card, label, name, notes }
+    this.events = [];        // { t, step, sharp, name, octave, midi }
+    this.showNames = true;
+    this.useFlats = false;
+    this.speed = 160;        // pixels per second
+    this.groupWindow = 120;  // ms: notes pressed this close together are drawn as a chord
+    this.lastGroupTime = 0;
+    this.raf = null;
+    this.clefs = [];
+    this.clefEnd = 70;
+    this.w = 0;
+    this.h = 0;
+    this.letters = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+
+    // The staff shows letter steps loStep to hiStep (F1 up to F6), plus a little margin.
+    // Anything outside that is drawn with an octave-shift mark.
+    this.loStep = 11;
+    this.hiStep = 45;
+    this.margin = 2;
+
+    this.updateColors();
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(() => this.resize()).observe(canvas);
+    } else {
+      window.addEventListener('resize', () => this.resize());
+    }
+    this.resize();
+
+    // The clef symbols come from the Noto Music web font: redraw once it has loaded.
+    if (document.fonts && document.fonts.load) {
+      document.fonts.load('40px "Noto Music"', '\u{1D11E}\u{1D122}')
+        .then(() => { this.layoutClefs(); this.draw(); })
+        .catch(() => {});
+    }
+  }
+
+  // ---- public API -------------------------------------------------------
+
+  addNote(note, octave) {
+    const now = performance.now();
+    let t = now;
+    if (now - this.lastGroupTime < this.groupWindow) {
+      t = this.lastGroupTime;      // joins the chord that just started
+    } else {
+      this.lastGroupTime = now;
+    }
+    const isBlack = note.includes('#');
+    const flat = isBlack && this.useFlats;
+    const shownName = flat ? FLAT_NAMES[note] : note;
+    this.events.push({
+      t,
+      // Position on the staff, counted in letter steps: C4 (middle C) = 28
+      step: octave * 7 + this.letters[shownName[0]],
+      sharp: isBlack && !flat,
+      flat,
+      name: shownName,
+      octave,
+      midi: (octave + 1) * 12 + NOTE_NAMES.indexOf(note)
+    });
+    this.updateReadout(t);
+    this.start();
+  }
+
+  setShowNames(value) {
+    this.showNames = value;
+    this.draw();
+  }
+
+  setUseFlats(value) {
+    this.useFlats = value;
+  }
+
+  clear() {
+    this.events = [];
+    this.resetReadout();
+    this.draw();
+  }
+
+  updateColors() {
+    const style = getComputedStyle(document.documentElement);
+    this.ink = style.getPropertyValue('--black-key-1').trim() || '#120b08';
+  }
+
+  // ---- chord names ------------------------------------------------------
+
+  // Works out a chord from the notes pressed together, or null if it is not a chord
+  chordInfo(list) {
+    const midis = list.map(e => e.midi);
+    const pcs = [...new Set(midis.map(m => m % 12))];
+    if (pcs.length < 2) return null;
+
+    const bass = Math.min(...midis) % 12;
+    // Try the lowest note as the root first, then the others (that gives inversions like C/E)
+    const roots = [bass, ...pcs.filter(p => p !== bass)];
+    for (const root of roots) {
+      const shape = pcs.map(p => (p - root + 12) % 12).sort((a, b) => a - b);
+      const match = CHORDS.find(([, set]) =>
+        set.length === shape.length && set.every((v, i) => v === shape[i]));
+      if (match) return { root, quality: match[0], bass };
+    }
+    return null;
+  }
+
+  // "C maj", "A min", "G7", "C maj / E"
+  chordLabel(info) {
+    const root = NOTE_NAMES[info.root];
+    const text = /^\d/.test(info.quality) ? `${root}${info.quality}` : `${root} ${info.quality}`;
+    return info.root === info.bass ? text : `${text} / ${NOTE_NAMES[info.bass]}`;
+  }
+
+  // ---- the chord card ---------------------------------------------------
+
+  setReadout(label, name, noteNames) {
+    const r = this.readout;
+    if (!r) return;
+    r.label.textContent = label;
+    r.name.textContent = name;
+    r.notes.replaceChildren(...noteNames.map((n) => {
+      const chip = document.createElement('span');
+      chip.textContent = n;
+      return chip;
+    }));
+    // Restart the little pop animation
+    r.card.classList.remove('pop');
+    void r.card.offsetWidth;
+    r.card.classList.add('pop');
+  }
+
+  resetReadout() {
+    this.setReadout('Play a key', '—', []);
+  }
+
+  updateReadout(t) {
+    if (!this.readout) return;
+    const list = this.events.filter(e => e.t === t).sort((a, b) => a.midi - b.midi);
+    if (!list.length) return;
+
+    if (list.length === 1) {
+      this.setReadout('Single note', `${list[0].name}${list[0].octave}`, []);
+      return;
+    }
+
+    const info = this.chordInfo(list);
+    const pcs = [...new Set(list.map(e => e.midi % 12))];
+    if (info) {
+      // Notes listed from the root of the chord upwards: C maj -> C E G
+      pcs.sort((a, b) => ((a - info.root + 12) % 12) - ((b - info.root + 12) % 12));
+      this.setReadout('Chord', this.chordLabel(info), pcs.map(p => NOTE_NAMES[p]));
+    } else {
+      const lowToHigh = [];
+      list.forEach(e => { if (!lowToHigh.includes(e.name)) lowToHigh.push(e.name); });
+      this.setReadout('No chord name', '?', lowToHigh);
+    }
+  }
+
+  // ---- layout -----------------------------------------------------------
+
+  resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = this.canvas.clientWidth;
+    const h = this.canvas.clientHeight;
+    if (!w || !h) return;
+
+    this.canvas.width = Math.round(w * dpr);
+    this.canvas.height = Math.round(h * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    this.w = w;
+    this.h = h;
+    const steps = (this.hiStep - this.loStep) + this.margin * 2;
+    this.half = h / steps;                                  // half a line gap: one letter step
+    this.top = (this.hiStep - 38 + this.margin) * this.half; // y of the top treble line
+    this.layoutClefs();
+    this.draw();
+  }
+
+  // y position of a letter step. Treble lines are steps 30-38, bass lines 18-26.
+  y(step) {
+    return this.top + (38 - step) * this.half;
+  }
+
+  // Notes above or below the staff are drawn 1-2 octaves closer, with a mark such as 8va
+  displayStep(step) {
+    if (step > this.hiStep) {
+      const k = Math.ceil((step - this.hiStep) / 7);
+      return { step: step - 7 * k, shift: k };
+    }
+    if (step < this.loStep) {
+      const k = Math.ceil((this.loStep - step) / 7);
+      return { step: step + 7 * k, shift: -k };
+    }
+    return { step, shift: 0 };
+  }
+
+  // Scales a clef glyph so it covers the given vertical range, whatever the font's metrics.
+  fitGlyph(ch, yTop, yBottom) {
+    const ctx = this.ctx;
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    ctx.font = `100px ${CLEF_FONT}`;
+    const m = ctx.measureText(ch);
+    const height = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+    if (!height) return null;
+
+    const k = (yBottom - yTop) / height;
+    const x = 12 + m.actualBoundingBoxLeft * k;
+    return {
+      ch,
+      size: 100 * k,
+      x,
+      y: yTop + m.actualBoundingBoxAscent * k,
+      right: x + m.actualBoundingBoxRight * k
+    };
+  }
+
+  layoutClefs() {
+    this.clefs = [
+      this.fitGlyph('\u{1D11E}', this.y(43), this.y(27)),    // treble clef
+      this.fitGlyph('\u{1D122}', this.y(26.3), this.y(19.5)) // bass clef
+    ];
+    const rights = this.clefs.filter(Boolean).map(c => c.right);
+    this.clefEnd = rights.length ? Math.max(...rights) + 16 : 70;
+  }
+
+  // ---- animation --------------------------------------------------------
+
+  start() {
+    if (!this.raf) this.raf = requestAnimationFrame(() => this.tick());
+  }
+
+  tick() {
+    this.raf = null;
+    this.draw();
+    if (this.events.length) this.start(); // keeps running only while notes are on screen
+  }
+
+  // ---- drawing ----------------------------------------------------------
+
+  draw() {
+    const { ctx, w, h } = this;
+    if (!w || !h) return;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = this.ink;
+    ctx.strokeStyle = this.ink;
+    ctx.globalAlpha = 1;
+
+    this.drawStaff();
+
+    const now = performance.now();
+    const entryX = w - 36;
+    const gone = this.clefEnd - 10;
+
+    // Drop notes that have scrolled past the clefs
+    this.events = this.events.filter(e => entryX - (now - e.t) * this.speed / 1000 > gone);
+
+    // Group by press time so chords share one x position
+    const groups = new Map();
+    for (const e of this.events) {
+      if (!groups.has(e.t)) groups.set(e.t, []);
+      groups.get(e.t).push(e);
+    }
+
+    groups.forEach((list, t) => {
+      const x = entryX - (now - t) * this.speed / 1000;
+      const alpha = Math.max(0, Math.min(1, (x - this.clefEnd) / 50));
+      const isChord = !!this.chordInfo(list);
+
+      const shown = list.map(e => ({ e, ...this.displayStep(e.step) }));
+      shown.sort((a, b) => a.step - b.step);
+
+      // Notes a second apart (or on the same step) would overlap: nudge every other one sideways
+      let prevStep = null;
+      let prevShifted = false;
+      shown.forEach(({ e, step, shift }) => {
+        const nudged = prevStep !== null && step - prevStep <= 1 && !prevShifted;
+        this.drawNote(e, step, shift, x + (nudged ? this.half * 2.5 : 0), alpha, !isChord);
+        prevStep = step;
+        prevShifted = nudged;
+      });
+    });
+
+    ctx.globalAlpha = 1;
+  }
+
+  drawStaff() {
+    const { ctx, w } = this;
+    const left = 8;
+    const right = w - 8;
+
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    [[30, 38], [18, 26]].forEach(([low, high]) => {
+      for (let s = low; s <= high; s += 2) {
+        const y = Math.round(this.y(s)) + 0.5;
+        ctx.moveTo(left, y);
+        ctx.lineTo(right, y);
+      }
+    });
+    // Barline joining the two staves
+    ctx.moveTo(left, this.y(38));
+    ctx.lineTo(left, this.y(18));
+    ctx.stroke();
+
+    this.clefs.forEach(c => {
+      if (!c) return;
+      ctx.font = `${c.size}px ${CLEF_FONT}`;
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'left';
+      ctx.fillText(c.ch, c.x, c.y);
+    });
+  }
+
+  drawNote(e, step, shift, x, alpha, showName) {
+    const { ctx, half } = this;
+    const y = this.y(step);
+    const rx = half * 1.3;
+    const ry = half * 0.95;
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = this.ink;
+    ctx.strokeStyle = this.ink;
+
+    // Ledger lines: middle C, above the treble staff, below the bass staff
+    const ledgers = [];
+    if (step === 28) ledgers.push(28);
+    for (let s = 40; s <= step; s += 2) ledgers.push(s);
+    for (let s = 16; s >= step; s -= 2) ledgers.push(s);
+    if (ledgers.length) {
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ledgers.forEach(s => {
+        const ly = Math.round(this.y(s)) + 0.5;
+        ctx.moveTo(x - rx * 1.7, ly);
+        ctx.lineTo(x + rx * 1.7, ly);
+      });
+      ctx.stroke();
+    }
+
+    // Note head
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-0.35);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    if (e.sharp) this.drawSharp(x - rx - half * 1.7, y);
+    if (e.flat) this.drawFlat(x - rx - half * 1.5, y);
+
+    // Octave-shift mark (8va, 8vb ...) to the left of the note
+    if (shift) {
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.font = `italic 700 ${Math.max(10, half * 1.9)}px Inter, sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'right';
+      ctx.fillText(SHIFT_MARKS[String(shift)] || '', x - rx - half * 3.6, y);
+      ctx.textAlign = 'left';
+    }
+
+    if (this.showNames && showName) {
+      ctx.globalAlpha = alpha * 0.7;
+      ctx.font = `600 ${Math.max(10, half * 2.3)}px Inter, sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${e.name}${e.octave}`, x + rx + half * 1.2, y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Sharp sign drawn from lines, so it does not depend on any font (kept small)
+  drawSharp(x, y) {
+    const { ctx } = this;
+    const s = this.half * 0.72;
+
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.45, y - s * 2);
+    ctx.lineTo(x - s * 0.45, y + s * 2.2);
+    ctx.moveTo(x + s * 0.45, y - s * 2.2);
+    ctx.lineTo(x + s * 0.45, y + s * 2);
+    ctx.stroke();
+
+    ctx.lineWidth = s * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x - s, y - s * 0.3);
+    ctx.lineTo(x + s, y - s * 1.0);
+    ctx.moveTo(x - s, y + s * 1.05);
+    ctx.lineTo(x + s, y + s * 0.35);
+    ctx.stroke();
+  }
+
+  // Flat sign: a stem with a rounded bowl, also drawn from lines
+  drawFlat(x, y) {
+    const { ctx } = this;
+    const s = this.half * 0.72;
+
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.5, y - s * 3);
+    ctx.lineTo(x - s * 0.5, y + s * 1.2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.5, y + s * 1.2);
+    ctx.bezierCurveTo(x + s * 1.6, y + s * 0.2, x + s * 1.4, y - s * 1.6, x - s * 0.5, y - s * 0.7);
+    ctx.stroke();
+  }
+}
+
+// ---- Start-up: connects the staff to the page and to the piano keys ---------
+
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('staff');
+  const piano = document.getElementById('piano');
+  if (!canvas || !piano) return;
+
+  // The chord card beside the staff
+  const card = document.getElementById('chord-card');
+  const readout = card ? {
+    card,
+    label: document.getElementById('chord-label'),
+    name: document.getElementById('chord-name'),
+    notes: document.getElementById('chord-notes')
+  } : null;
+
+  const staff = new StaffReel(canvas, readout);
+
+  // "Show note names" checkbox and "Clear" button
+  const names = document.getElementById('show-names');
+  if (names) {
+    names.addEventListener('change', (e) => {
+      staff.setShowNames(e.target.checked);
+      e.target.blur(); // so the computer-keyboard keys keep working
+    });
+  }
+  const clear = document.getElementById('staff-clear');
+  if (clear) {
+    clear.addEventListener('click', (e) => {
+      staff.clear();
+      e.currentTarget.blur();
+    });
+  }
+
+  // Extra controls, added here so index.html needs no change
+  const chordToggle = document.createElement('label');
+  chordToggle.className = 'staff-toggle';
+  chordToggle.innerHTML = '<input type="checkbox" id="chord-mode" checked /> Click plays a chord';
+
+  const sizes = document.createElement('div');
+  sizes.className = 'chord-sizes';
+  sizes.innerHTML = 'Bigger chords:' + [4, 5, 6].map((n) =>
+    `<label><input type="checkbox" class="chord-size" value="${n}" /> ${n}-note</label>`).join('');
+
+  const flatToggle = document.createElement('label');
+  flatToggle.className = 'staff-toggle';
+  flatToggle.innerHTML = '<input type="checkbox" id="use-flats" /> Show flats (♭)';
+
+  const header = document.querySelector('.staff-header');
+  if (header) {
+    header.insertBefore(chordToggle, clear || null);
+    header.insertBefore(sizes, clear || null);
+    header.insertBefore(flatToggle, clear || null);
+  }
+  const chordBox = chordToggle.querySelector('input');
+  chordBox.addEventListener('change', (e) => e.target.blur());
+  sizes.querySelectorAll('input').forEach((box) =>
+    box.addEventListener('change', (e) => e.target.blur()));
+  flatToggle.querySelector('input').addEventListener('change', (e) => {
+    staff.setUseFlats(e.target.checked);
+    e.target.blur();
+  });
+
+  // The biggest ticked size wins; with nothing ticked, clicks play triads
+  const chordSize = () => {
+    const ticked = [...sizes.querySelectorAll('input:checked')].map((b) => Number(b.value));
+    return ticked.length ? Math.max(...ticked) : 3;
+  };
+
+  // Remember when the mouse or a finger last pressed a piano key
+  // (computer-keyboard presses never play a chord for you, so you can build your own)
+  let lastPointerDown = 0;
+  piano.addEventListener('pointerdown', (e) => {
+    if (e.isTrusted) lastPointerDown = performance.now();
+  }, true);
+
+  // Keys that were pressed for you as part of a chord: root key id -> other keys
+  const chordParts = new Map();
+
+  const pressChord = (rootKey) => {
+    const keys = Array.from(piano.querySelectorAll('.key')); // lowest note first (A0 at 0), one key per semitone
+    const rootIndex = keys.indexOf(rootKey);
+    if (rootIndex < 0) return;
+
+    const scale = document.getElementById('scale-select');
+    const root = document.getElementById('root-note-select');
+    const intervals = chordFor(
+      NOTE_NAMES.indexOf(rootKey.dataset.note),
+      scale && scale.value,
+      root && root.value,
+      chordSize()
+    );
+
+    const parts = [];
+    intervals.slice(1).forEach((semitones) => {
+      const key = keys[rootIndex + semitones];
+      if (key && key !== rootKey && !parts.includes(key)) parts.push(key);
+    });
+    chordParts.set(rootKey.dataset.noteId, parts);
+
+    parts.forEach((key, i) => {
+      key.dataset.chordPart = '1';
+      staff.addNote(key.dataset.note, Number(key.dataset.octave));
+      // Press the key exactly as a finger would, so it sounds and lights up
+      key.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true, cancelable: true, pointerId: 1000 + i, pointerType: 'mouse'
+      }));
+    });
+  };
+
+  const releaseChord = (rootNoteId) => {
+    const parts = chordParts.get(rootNoteId);
+    if (!parts) return;
+    chordParts.delete(rootNoteId);
+    parts.forEach((key) => {
+      delete key.dataset.chordPart;
+      key.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true, pointerId: 1000, pointerType: 'mouse'
+      }));
+    });
+  };
+
+  // A piano key that gains the "active" class has just been played
+  // (mouse, touch, computer keyboard or the demo all do this).
+  new MutationObserver((records) => {
+    records.forEach((r) => {
+      if (r.type === 'childList') { // the piano was redrawn
+        chordParts.clear();
+        return;
+      }
+      const key = r.target;
+      if (!key.classList) return;
+
+      const wasActive = (r.oldValue || '').split(/\s+/).includes('active');
+      const isActive = key.classList.contains('active');
+
+      if (wasActive && !isActive) {          // key let go: let go of its chord too
+        releaseChord(key.dataset.noteId);
+        return;
+      }
+      if (!isActive || wasActive) return;     // not a new press
+      if (key.dataset.chordPart) return;      // pressed for a chord: already drawn
+
+      staff.addNote(key.dataset.note, Number(key.dataset.octave));
+      if (chordBox.checked && performance.now() - lastPointerDown < 150) pressChord(key);
+    });
+  }).observe(piano, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['class'],
+    attributeOldValue: true
+  });
+
+  // Changing the Finish rewrites the page's colour variables: redraw in the new colours
+  new MutationObserver(() => {
+    staff.updateColors();
+    staff.draw();
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+});
+
+</script>
+    <script>
+// Theme values are listed once per finish, in the same order as THEME_KEYS.
+const THEME_KEYS = [
+  'bg-1', 'bg-2', 'bg-3', 'app-shell-top', 'app-shell-mid', 'app-shell-bottom',
+  'topbar-top', 'topbar-bottom', 'toolbar-bg-top', 'toolbar-bg-bottom',
+  'panel-bg-top', 'panel-bg-bottom', 'piano-top', 'piano-mid', 'piano-bottom',
+  'white-key', 'white-key-2', 'white-key-3', 'black-key-1', 'black-key-2', 'black-key-3',
+  'gold-soft', 'muted', 'button-grad-1', 'button-grad-2', 'scale-glow'
+];
+
+const THEMES = {
+  classic: [
+    '#1a0f09', '#2d1b12', '#3c2617', 'rgba(111, 71, 49, 0.92)', 'rgba(56, 31, 18, 0.92)', 'rgba(28, 16, 11, 0.96)',
+    'rgba(77, 49, 32, 0.9)', 'rgba(46, 27, 17, 0.75)', 'rgba(101, 63, 42, 0.8)', 'rgba(89, 56, 38, 0.72)',
+    'rgba(53, 31, 22, 0.9)', 'rgba(29, 17, 12, 0.8)', 'rgba(69,42,27,0.98)', 'rgba(42,27,18,0.96)', 'rgba(21,12,9,0.98)',
+    '#fefaf4', '#f4ecdf', '#e8dcc4', '#120b08', '#1f130f', '#2d1d15',
+    '#f3d8a6', '#d7b98a', '#ab6d43', '#d49d5d', 'rgba(248, 218, 165, 0.45)'
+  ],
+  concert: [
+    '#0b1015', '#18202a', '#202d3d', 'rgba(18, 24, 32, 0.98)', 'rgba(25, 31, 41, 0.96)', 'rgba(9, 12, 18, 1)',
+    'rgba(24, 32, 42, 0.96)', 'rgba(15, 20, 27, 0.9)', 'rgba(37, 46, 58, 0.92)', 'rgba(20, 28, 35, 0.86)',
+    'rgba(17, 22, 29, 0.9)', 'rgba(10, 14, 18, 0.92)', 'rgba(16, 18, 22, 0.98)', 'rgba(24, 29, 35, 0.98)', 'rgba(8, 10, 14, 1)',
+    '#f7f7f9', '#edf0f5', '#dfe5ed', '#05080d', '#111821', '#1b2430',
+    '#dfeaf8', '#b9c8d9', '#5a7ca8', '#93b8d9', 'rgba(140, 200, 255, 0.55)'
+  ],
+  vintage: [
+    '#230d0b', '#3c1b15', '#5a2e22', 'rgba(95, 53, 41, 0.95)', 'rgba(73, 37, 29, 0.94)', 'rgba(42, 19, 15, 0.96)',
+    'rgba(84, 45, 36, 0.92)', 'rgba(54, 28, 22, 0.8)', 'rgba(110, 63, 48, 0.78)', 'rgba(83, 48, 39, 0.74)',
+    'rgba(68, 39, 31, 0.9)', 'rgba(34, 20, 17, 0.82)', 'rgba(58, 31, 24, 0.98)', 'rgba(42, 24, 18, 0.96)', 'rgba(24, 12, 10, 0.98)',
+    '#f9f2e8', '#ecddd0', '#dcc4b3', '#120907', '#1b0f0d', '#2b1715',
+    '#f4d5a8', '#d3a07a', '#a75c3e', '#d39b63', 'rgba(255, 185, 100, 0.42)'
+  ],
+  modern: [
+    '#111720', '#1a2430', '#2a3340', 'rgba(31, 39, 48, 0.96)', 'rgba(21, 27, 34, 0.94)', 'rgba(12, 17, 22, 0.98)',
+    'rgba(41, 52, 64, 0.96)', 'rgba(25, 34, 41, 0.88)', 'rgba(60, 72, 82, 0.88)', 'rgba(35, 45, 52, 0.82)',
+    'rgba(21, 28, 35, 0.9)', 'rgba(12, 17, 21, 0.88)', 'rgba(26, 31, 37, 0.98)', 'rgba(19, 23, 28, 0.96)', 'rgba(8, 11, 15, 1)',
+    '#f3f6f9', '#e6edf3', '#d7e0e9', '#090d12', '#141c24', '#202d38',
+    '#dfe9f6', '#a9b7c8', '#6d7f90', '#adc3d8', 'rgba(170, 214, 255, 0.5)'
+  ]
+};
+
+class PianoApp {
+  constructor() {
+    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // The piano runs from C1 (MIDI 24) up to C7 (MIDI 96): 73 keys, 43 of them white.
+    // Middle C has 21 white keys on each side, so it sits exactly in the centre.
+    this.firstMidi = 24;
+    this.lastMidi = 96;
+    this.whiteKeyCount = 43;
+
+    // The computer keyboard plays two octaves at a time:
+    // the Z row starts on C of startOctave, the Q row on C one octave higher.
+    // With startOctave = 3, the Q key is middle C (C4).
+    this.startOctave = 3;
+    this.minOctave = 2;
+    this.maxOctave = 6;
+
+    this.volume = 0.72;
+    this.sustain = 0.4;
+    this.reverbAmount = 0.3;
+    this.tone = 'piano';
+    this.currentScale = 'major';
+    this.rootNote = 'C';
+    this.pianoStyle = 'classic';
+    this.activeNotes = new Map();
+    this.demoTimers = [];
+
+    this.notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+    this.blackKeyRatio = 0.6; // black key width as a fraction of a white key
+
+    // key -> [note, octave offset from startOctave]
+    this.keyboardMap = {
+      z: ['C', 0], s: ['C#', 0], x: ['D', 0], d: ['D#', 0], c: ['E', 0], v: ['F', 0],
+      g: ['F#', 0], b: ['G', 0], h: ['G#', 0], n: ['A', 0], j: ['A#', 0], m: ['B', 0],
+      q: ['C', 1], '2': ['C#', 1], w: ['D', 1], '3': ['D#', 1], e: ['E', 1], r: ['F', 1],
+      '5': ['F#', 1], t: ['G', 1], '6': ['G#', 1], y: ['A', 1], '7': ['A#', 1], u: ['B', 1]
+    };
+
+    // Scale definitions (semitones from the root note)
+    this.scalePatterns = {
+      'major': [0, 2, 4, 5, 7, 9, 11],
+      'minor': [0, 2, 3, 5, 7, 8, 10],
+      'pentatonic-major': [0, 2, 4, 7, 9],
+      'pentatonic-minor': [0, 3, 5, 7, 10],
+      'blues': [0, 3, 5, 6, 7, 10],
+      'dorian': [0, 2, 3, 5, 7, 9, 10],
+      'phrygian': [0, 1, 3, 5, 7, 8, 10],
+      'lydian': [0, 2, 4, 6, 7, 9, 11],
+      'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+      'harmonic-minor': [0, 2, 3, 5, 7, 8, 11],
+      'melodic-minor': [0, 2, 3, 5, 7, 9, 11]
+    };
+
+    this.initAudio();
+    this.init();
+  }
+
+  applyTheme() {
+    const values = THEMES[this.pianoStyle] || THEMES.classic;
+    const root = document.documentElement;
+    THEME_KEYS.forEach((key, i) => root.style.setProperty(`--${key}`, values[i]));
+  }
+
+  initAudio() {
+    const ctx = this.audioContext;
+
+    this.masterGain = ctx.createGain();
+    this.masterGain.gain.value = this.volume;
+
+    // A compressor keeps chords from clipping.
+    this.compressor = ctx.createDynamicsCompressor();
+    this.masterGain.connect(this.compressor);
+    this.compressor.connect(ctx.destination);
+
+    this.reverbGain = ctx.createGain();
+    this.reverbGain.gain.value = this.reverbAmount;
+
+    this.convolver = ctx.createConvolver();
+    const length = Math.floor(ctx.sampleRate * 2.5);
+    const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const data = buffer.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+      }
+    }
+    this.convolver.buffer = buffer;
+    this.convolver.connect(this.reverbGain);
+    this.reverbGain.connect(this.masterGain);
+  }
+
+  init() {
+    this.applyTheme();
+    this.renderPiano();
+    this.setupEventListeners();
+    this.centreMiddleC();
+    window.addEventListener('resize', () => this.centreMiddleC());
+  }
+
+  isNoteInScale(note) {
+    const distance = (this.notes.indexOf(note) - this.notes.indexOf(this.rootNote) + 12) % 12;
+    return this.scalePatterns[this.currentScale].includes(distance);
+  }
+
+  // Updates highlighting on the existing keys, so held notes are not interrupted.
+  updateScaleClasses() {
+    document.querySelectorAll('.key').forEach(key => {
+      const inScale = this.isNoteInScale(key.dataset.note);
+      key.classList.toggle('in-scale', inScale);
+      key.classList.toggle('out-of-scale', !inScale);
+      key.classList.toggle('is-root', key.dataset.note === this.rootNote);
+    });
+  }
+
+  // Shows which computer key plays which piano key
+  updateHints() {
+    const hints = {};
+    Object.entries(this.keyboardMap).forEach(([letter, [note, offset]]) => {
+      hints[`${note}-${this.startOctave + offset}`] = letter.toUpperCase();
+    });
+    document.querySelectorAll('.key').forEach(key => {
+      const hint = key.querySelector('.kbd-hint');
+      if (hint) hint.textContent = hints[key.dataset.noteId] || '';
+    });
+  }
+
+  updateOctaveLabel() {
+    document.getElementById('octave-label').textContent =
+      `C${this.startOctave}–B${this.startOctave + 1}`;
+  }
+
+  // The − and + buttons move the two octaves the computer keyboard plays
+  shiftOctave(direction) {
+    const start = this.startOctave + direction;
+    if (start < this.minOctave || start > this.maxOctave) return;
+    this.stopAll();
+    this.startOctave = start;
+    this.updateHints();
+    this.updateOctaveLabel();
+  }
+
+  // Only matters on small screens, where the piano scrolls sideways
+  centreMiddleC() {
+    const piano = document.getElementById('piano');
+    const c4 = piano.querySelector('[data-note-id="C-4"]');
+    if (!c4 || piano.scrollWidth <= piano.clientWidth) return;
+    const pianoBox = piano.getBoundingClientRect();
+    const keyBox = c4.getBoundingClientRect();
+    piano.scrollLeft += (keyBox.left + keyBox.width / 2) - (pianoBox.left + pianoBox.width / 2);
+  }
+
+  renderPiano() {
+    this.stopAll();
+
+    const piano = document.getElementById('piano');
+    piano.innerHTML = '';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'keys';
+
+    let whitesSoFar = 0; // a black key sits on the line after this many white keys
+
+    for (let midi = this.firstMidi; midi <= this.lastMidi; midi++) {
+      const note = this.notes[midi % 12];
+      const octave = Math.floor(midi / 12) - 1;
+      const isBlack = note.includes('#');
+      const noteId = `${note}-${octave}`;
+      const key = document.createElement('button');
+
+      key.type = 'button';
+      key.className = `key ${isBlack ? 'black-key' : 'white-key'}`;
+      key.dataset.note = note;
+      key.dataset.octave = octave;
+      key.dataset.noteId = noteId;
+      key.setAttribute('aria-label', `${note} ${octave}`);
+      if (midi === 60) key.classList.add('middle-c');
+
+      if (isBlack) {
+        const width = this.blackKeyRatio;
+        key.style.left = `${((whitesSoFar - width / 2) / this.whiteKeyCount) * 100}%`;
+        key.style.width = `${(width / this.whiteKeyCount) * 100}%`;
+      } else {
+        // White keys show the note name (every C also shows its octave)
+        const nameLabel = document.createElement('span');
+        nameLabel.className = 'note-name';
+        nameLabel.textContent = note === 'C' ? `C${octave}` : note;
+        key.appendChild(nameLabel);
+        whitesSoFar++;
+      }
+
+      // The computer-keyboard letter (filled in by updateHints)
+      const hintLabel = document.createElement('span');
+      hintLabel.className = 'kbd-hint';
+      key.appendChild(hintLabel);
+
+      // Pointer events cover mouse, touch and pen.
+      key.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (key.hasPointerCapture && key.hasPointerCapture(e.pointerId)) {
+          key.releasePointerCapture(e.pointerId); // lets you slide across keys
+        }
+        this.playNote(note, octave, key);
+      });
+      key.addEventListener('pointerenter', (e) => {
+        if (e.buttons === 1) this.playNote(note, octave, key);
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(type => {
+        key.addEventListener(type, () => this.stopNote(noteId, key));
+      });
+
+      wrap.appendChild(key);
+    }
+
+    piano.appendChild(wrap);
+    this.updateScaleClasses();
+    this.updateHints();
+    this.updateOctaveLabel();
+  }
+
+  getToneSettings() {
+    if (this.tone === 'bright') {
+      return { attack: 0.006, decay: 0.18, release: 1.2 + this.sustain * 2.6, harmonicMix: 0.82, filterCutoff: 5200 };
+    }
+    if (this.tone === 'warm') {
+      return { attack: 0.01, decay: 0.24, release: 1.6 + this.sustain * 3.2, harmonicMix: 0.46, filterCutoff: 3000 };
+    }
+    return { attack: 0.008, decay: 0.15, release: 1.3 + this.sustain * 3, harmonicMix: 0.68, filterCutoff: 3600 };
+  }
+
+  playNote(note, octave, keyElement) {
+    const noteId = `${note}-${octave}`;
+    if (this.activeNotes.has(noteId)) return;
+
+    const ctx = this.audioContext;
+    if (ctx.state === 'suspended') ctx.resume(); // required by iOS/Safari and some browsers
+
+    const settings = this.getToneSettings();
+    const freq = this.getFrequency(note, octave);
+    const now = ctx.currentTime;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = settings.filterCutoff;
+    filter.Q.value = 0.7;
+
+    const voiceGain = ctx.createGain(); // used for the release
+    filter.connect(voiceGain);
+    voiceGain.connect(this.convolver);
+    voiceGain.connect(this.masterGain);
+
+    // [frequency, wave, detune, level]
+    const partials = [
+      [freq, 'sine', 0, 1],
+      [freq * 2, 'triangle', 4, settings.harmonicMix],
+      [freq * 3, 'sine', -2, 0.42]
+    ];
+
+    const oscillators = partials.map(([f, type, detune, level]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const peak = 0.28 * level;
+
+      osc.type = type;
+      osc.frequency.value = f;
+      osc.detune.value = detune;
+
+      // Attack, then a slow decay while the key is held (more piano-like).
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(peak, now + settings.attack);
+      gain.gain.exponentialRampToValueAtTime(peak * 0.45, now + settings.attack + settings.decay + 1.2);
+
+      osc.connect(gain);
+      gain.connect(filter);
+      osc.start(now);
+      return osc;
+    });
+
+    this.activeNotes.set(noteId, { oscillators, voiceGain, filter, release: settings.release });
+
+    if (keyElement) keyElement.classList.add('active');
+  }
+
+  stopNote(noteId, keyElement) {
+    const voice = this.activeNotes.get(noteId);
+    if (!voice) return;
+
+    const now = this.audioContext.currentTime;
+    const gain = voice.voiceGain.gain;
+
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(Math.max(gain.value, 0.0001), now);
+    gain.exponentialRampToValueAtTime(0.0001, now + voice.release);
+
+    voice.oscillators.forEach(osc => osc.stop(now + voice.release + 0.1));
+    voice.oscillators[0].onended = () => {
+      voice.filter.disconnect();
+      voice.voiceGain.disconnect();
+    };
+
+    this.activeNotes.delete(noteId);
+    if (keyElement) keyElement.classList.remove('active');
+  }
+
+  stopAll() {
+    this.demoTimers.forEach(clearTimeout);
+    this.demoTimers = [];
+    [...this.activeNotes.keys()].forEach(noteId => {
+      this.stopNote(noteId, document.querySelector(`[data-note-id="${noteId}"]`));
+    });
+  }
+
+  getFrequency(note, octave) {
+    // Equal temperament, A4 = 440 Hz
+    const midi = (octave + 1) * 12 + this.notes.indexOf(note);
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  }
+
+  setupEventListeners() {
+    const on = (id, event, handler) => {
+      document.getElementById(id).addEventListener(event, (e) => {
+        handler(e);
+        // Release focus so the computer-keyboard keys keep working.
+        if (event === 'change') e.target.blur();
+      });
+    };
+
+    on('octave-down', 'click', () => this.shiftOctave(-1));
+    on('octave-up', 'click', () => this.shiftOctave(1));
+
+    on('scale-select', 'change', (e) => {
+      this.currentScale = e.target.value;
+      this.updateScaleClasses();
+    });
+    on('root-note-select', 'change', (e) => {
+      this.rootNote = e.target.value;
+      this.updateScaleClasses();
+    });
+    on('style-select', 'change', (e) => {
+      this.pianoStyle = e.target.value;
+      this.applyTheme();
+    });
+    on('volume', 'input', (e) => {
+      this.volume = e.target.value / 100;
+      this.masterGain.gain.value = this.volume;
+    });
+    on('sustain', 'input', (e) => { this.sustain = e.target.value / 100; });
+    on('reverb', 'input', (e) => {
+      this.reverbAmount = e.target.value / 100;
+      this.reverbGain.gain.value = this.reverbAmount;
+    });
+    on('tone', 'change', (e) => { this.tone = e.target.value; });
+    on('demo-btn', 'click', () => this.playDemo());
+
+    const lookup = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return null;
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return null;
+      const mapped = this.keyboardMap[e.key.toLowerCase()];
+      if (!mapped) return null;
+      const [note, offset] = mapped;
+      const octave = this.startOctave + offset;
+      const keyElement = document.querySelector(`[data-note-id="${note}-${octave}"]`);
+      return keyElement ? { note, octave, keyElement } : null;
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      const hit = lookup(e);
+      if (hit) this.playNote(hit.note, hit.octave, hit.keyElement);
+    });
+
+    document.addEventListener('keyup', (e) => {
+      const hit = lookup(e);
+      if (hit) this.stopNote(`${hit.note}-${hit.octave}`, hit.keyElement);
+    });
+
+    window.addEventListener('blur', () => this.stopAll());
+  }
+
+  // Plays the selected scale upwards from the root note, starting near middle C.
+  playDemo() {
+    this.stopAll();
+
+    const demoOctave = 4;
+    const rootIndex = this.notes.indexOf(this.rootNote);
+    const semitones = [...this.scalePatterns[this.currentScale], 12].map(s => rootIndex + s);
+    const sequence = semitones.map(s => ({
+      note: this.notes[s % 12],
+      octave: demoOctave + Math.floor(s / 12)
+    }));
+
+    sequence.forEach(({ note, octave }, i) => {
+      const noteId = `${note}-${octave}`;
+      this.demoTimers.push(setTimeout(() => {
+        const keyElement = document.querySelector(`[data-note-id="${noteId}"]`);
+        if (!keyElement) return;
+        this.playNote(note, octave, keyElement);
+        this.demoTimers.push(setTimeout(() => this.stopNote(noteId, keyElement), 280 + this.sustain * 400));
+      }, i * 360));
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  window.pianoApp = new PianoApp();
+});
+
+</script>
+    <script>
+// Artist panel: pick an artist (Chopin first) to get buttons for the scales, chords and
+// melodies they used. More artists can be added to ARTISTS later.
+// Notes use sharps (A#4 = B-flat 4) because that is how the piano keys are named.
+
+const ARTISTS = {
+  chopin: {
+    name: 'Chopin',
+    blurb: 'Romantic piano music: lots of flat keys, minor colours and rich chords.',
+    scales: [
+      { label: 'E♭ major', root: 'D#', scale: 'major' },
+      { label: 'A♭ major', root: 'G#', scale: 'major' },
+      { label: 'D♭ major', root: 'C#', scale: 'major' },
+      { label: 'C♯ harmonic minor', root: 'C#', scale: 'harmonic-minor' },
+      { label: 'F minor', root: 'F', scale: 'minor' },
+      { label: 'B♭ minor', root: 'A#', scale: 'minor' },
+      { label: 'E minor', root: 'E', scale: 'minor' },
+      { label: 'A minor (melodic)', root: 'A', scale: 'melodic-minor' }
+    ],
+    // root is the pitch class; the chord is built from the root up in octave 3
+    chords: [
+      { label: 'E♭ maj', root: 'D#', intervals: [0, 4, 7] },
+      { label: 'B♭7', root: 'A#', intervals: [0, 4, 7, 10] },
+      { label: 'C min7', root: 'C', intervals: [0, 3, 7, 10] },
+      { label: 'A♭ maj7', root: 'G#', intervals: [0, 4, 7, 11] },
+      { label: 'F min', root: 'F', intervals: [0, 3, 7] },
+      { label: 'C♯ dim7', root: 'C#', intervals: [0, 3, 6, 9] },
+      { label: 'D♭ maj (Neapolitan)', root: 'C#', intervals: [0, 4, 7] }
+    ],
+    // [note, beats]. Simplified sketches of the openings, not note-exact scores.
+    melodies: [
+      {
+        label: 'Nocturne Op. 9 No. 2',
+        notes: [['A#4', 1.5], ['G5', 0.5], ['A#4', 0.5], ['D#5', 1.5], ['C5', 0.5], ['A#4', 2]]
+      },
+      {
+        label: 'Prelude Op. 28 No. 4',
+        notes: [['B4', 2], ['B4', 1], ['C5', 1], ['B4', 2], ['A4', 1], ['A4', 1], ['G4', 2]]
+      },
+      {
+        label: 'Raindrop Prelude Op. 28 No. 15',
+        notes: [['G#4', 1], ['G#4', 1], ['G#4', 1], ['G#4', 1], ['A#4', 1.5], ['G#4', 0.5], ['F4', 2]]
+      }
+    ]
+  },
+  beatles: {
+    name: 'The Beatles',
+    blurb: 'Pop and rock: simple major chords, with blues and Mixolydian colour.',
+    scales: [
+      { label: 'C major', root: 'C', scale: 'major' },
+      { label: 'G Mixolydian', root: 'G', scale: 'mixolydian' },
+      { label: 'A major', root: 'A', scale: 'major' },
+      { label: 'E blues', root: 'E', scale: 'blues' }
+    ],
+    chords: [
+      { label: 'C maj', root: 'C', intervals: [0, 4, 7] },
+      { label: 'G maj', root: 'G', intervals: [0, 4, 7] },
+      { label: 'F maj', root: 'F', intervals: [0, 4, 7] },
+      { label: 'A min', root: 'A', intervals: [0, 3, 7] },
+      { label: 'D7', root: 'D', intervals: [0, 4, 7, 10] },
+      { label: 'E7', root: 'E', intervals: [0, 4, 7, 10] }
+    ],
+    melodies: []
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const select = document.getElementById('artist-select');
+  if (!select) return;
+
+  const app = () => window.pianoApp;
+  const keyFor = (note, octave) => document.querySelector(`[data-note-id="${note}-${octave}"]`);
+
+  const split = (id) => {
+    const m = /^([A-G]#?)(\d)$/.exec(id);
+    return { note: m[1], octave: Number(m[2]) };
+  };
+
+  const setSelect = (id, value) => {
+    const el = document.getElementById(id);
+    el.value = value;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  // Plays notes (as { note, octave }) at the same time, then lets go
+  const playTogether = (list, ms) => {
+    const a = app();
+    a.stopAll();
+    list.forEach(({ note, octave }) => {
+      const el = keyFor(note, octave);
+      if (el) a.playNote(note, octave, el);
+    });
+    a.demoTimers.push(setTimeout(() => {
+      list.forEach(({ note, octave }) => a.stopNote(`${note}-${octave}`, keyFor(note, octave)));
+    }, ms));
+  };
+
+  const playChord = (chord) => {
+    const base = 36 + app().notes.indexOf(chord.root); // octave 3
+    playTogether(chord.intervals.map((i) => {
+      const midi = base + i;
+      return { note: app().notes[midi % 12], octave: Math.floor(midi / 12) - 1 };
+    }), 1400);
+  };
+
+  const playMelody = (melody) => {
+    const a = app();
+    a.stopAll();
+    const beat = 600;
+    let at = 0;
+    melody.notes.forEach(([id, beats]) => {
+      const { note, octave } = split(id);
+      const start = at;
+      a.demoTimers.push(setTimeout(() => {
+        const el = keyFor(note, octave);
+        if (!el) return;
+        a.playNote(note, octave, el);
+        a.demoTimers.push(setTimeout(() => a.stopNote(id, el), beats * beat * 0.92));
+      }, start));
+      at += beats * beat;
+    });
+  };
+
+  const panel = document.createElement('section');
+  panel.className = 'artist-panel';
+  panel.hidden = true;
+  document.body.appendChild(panel);
+
+  const cols = document.createElement('div');
+  cols.className = 'artist-cols';
+
+  const section = (title, items, onClick) => {
+    if (!items.length) return;
+    const col = document.createElement('div');
+    const h = document.createElement('h3');
+    h.textContent = title;
+    const list = document.createElement('div');
+    list.className = 'artist-list';
+    items.forEach((item) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = item.label;
+      b.addEventListener('click', (e) => { onClick(item); e.currentTarget.blur(); });
+      list.appendChild(b);
+    });
+    col.append(h, list);
+    cols.appendChild(col);
+  };
+
+  // On wide screens, sit over the staff itself so the tick boxes above it stay usable
+  const place = () => {
+    const body = document.querySelector('.staff-body');
+    if (!body || panel.hidden || window.innerWidth <= 900) {
+      panel.style.cssText = '';
+      return;
+    }
+    const r = body.getBoundingClientRect();
+    panel.style.top = `${r.top}px`;
+    panel.style.left = `${r.left}px`;
+    panel.style.width = `${r.width}px`;
+    panel.style.maxHeight = `${r.height}px`;
+  };
+  window.addEventListener('resize', place);
+
+  const render = (artist) => {
+    panel.replaceChildren();
+    cols.replaceChildren();
+    const head = document.createElement('div');
+    head.className = 'artist-head';
+    head.innerHTML = `<h2>${artist.name}</h2>`;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'artist-close';
+    close.setAttribute('aria-label', 'Close artist panel');
+    close.textContent = '✕';
+    close.addEventListener('click', () => { panel.hidden = true; });
+    head.appendChild(close);
+
+    const blurb = document.createElement('p');
+    blurb.className = 'artist-blurb';
+    blurb.textContent = artist.blurb;
+    panel.append(head, blurb);
+
+    section('Scales (sets scale + root)', artist.scales, (s) => {
+      setSelect('scale-select', s.scale);
+      setSelect('root-note-select', s.root);
+    });
+    section('Chords (click to hear)', artist.chords, playChord);
+    section('Melodies (click to play)', artist.melodies, playMelody);
+    panel.appendChild(cols);
+
+    const note = document.createElement('p');
+    note.className = 'artist-note';
+    note.textContent = 'Melodies are simplified sketches of the opening phrases.';
+    panel.appendChild(note);
+  };
+
+  select.addEventListener('change', (e) => {
+    const artist = ARTISTS[e.target.value];
+    if (artist) {
+      render(artist);
+      panel.hidden = false;
+    } else {
+      panel.hidden = true;
+    }
+    place();
+    e.target.blur();
+  });
+
+  const btn = document.getElementById('chopin-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const open = select.value === 'chopin' && !panel.hidden;
+      select.value = open ? '' : 'chopin';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      btn.blur();
+    });
+  }
+});
+
+</script>
+  </body>
+</html>
