@@ -41,6 +41,25 @@ const ARTISTS = {
         notes: [['G#4', 1], ['G#4', 1], ['G#4', 1], ['G#4', 1], ['A#4', 1.5], ['G#4', 0.5], ['F4', 2]]
       }
     ]
+  },
+  beatles: {
+    name: 'The Beatles',
+    blurb: 'Pop and rock: simple major chords, with blues and Mixolydian colour.',
+    scales: [
+      { label: 'C major', root: 'C', scale: 'major' },
+      { label: 'G Mixolydian', root: 'G', scale: 'mixolydian' },
+      { label: 'A major', root: 'A', scale: 'major' },
+      { label: 'E blues', root: 'E', scale: 'blues' }
+    ],
+    chords: [
+      { label: 'C maj', root: 'C', intervals: [0, 4, 7] },
+      { label: 'G maj', root: 'G', intervals: [0, 4, 7] },
+      { label: 'F maj', root: 'F', intervals: [0, 4, 7] },
+      { label: 'A min', root: 'A', intervals: [0, 3, 7] },
+      { label: 'D7', root: 'D', intervals: [0, 4, 7, 10] },
+      { label: 'E7', root: 'E', intervals: [0, 4, 7, 10] }
+    ],
+    melodies: []
   }
 };
 
@@ -110,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
   cols.className = 'artist-cols';
 
   const section = (title, items, onClick) => {
+    if (!items.length) return;
     const col = document.createElement('div');
     const h = document.createElement('h3');
     h.textContent = title;
