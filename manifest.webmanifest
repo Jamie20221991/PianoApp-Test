@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Glow Piano",
+  "short_name": "Glow Piano",
+  "description": "Play piano, explore musical scales and chords, and learn with Glow Piano.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1a0f09",
+  "theme_color": "#2d1b12",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
