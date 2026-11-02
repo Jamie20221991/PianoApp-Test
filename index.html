@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Glow Piano</title>
+    <meta name="description" content="Play piano, explore musical scales and chords, and learn with Glow Piano." />
+    <meta name="theme-color" content="#2d1b12" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Music&display=swap" rel="stylesheet" />
@@ -126,14 +130,24 @@
           </select>
         </label>
 
+        <button type="button" id="install-btn" class="demo-btn install-btn">Install app</button>
         <button id="demo-btn" class="demo-btn">Play demo</button>
       </aside>
 
       <section id="piano" class="piano" aria-label="Piano keyboard" aria-live="polite"></section>
     </div>
 
+    <dialog id="install-dialog" class="install-dialog">
+      <form method="dialog">
+        <h2>Install Glow Piano</h2>
+        <p id="install-help">Use your browser’s menu to install the app or add it to your home screen.</p>
+        <button type="submit" class="demo-btn">Got it</button>
+      </form>
+    </dialog>
+
     <script src="Staff.js?v=7"></script>
     <script src="script.js?v=8"></script>
     <script src="artists.js?v=2"></script>
+    <script src="pwa.js"></script>
   </body>
 </html>
